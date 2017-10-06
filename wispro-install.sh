@@ -26,7 +26,7 @@ hostname -F /etc/hostname
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
-  apk add git make
+  apk add git make vim
   cd /tmp
   git clone https://github.com/gentoo/gentoo-syntax.git
   cd gentoo-syntax
