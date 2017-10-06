@@ -139,6 +139,15 @@ bash-server)
 bash-daemon)
   docker exec -it wispro-daemon /bin/bash
   ;;
+reset)
+  echo "Deleting all containers and Wispro database, are you sure?"
+  echo "(Pres Ctrl-c to cancel/Enter to continue)"
+  read dummy
+  stop server
+  stop daemon
+  docker container prune -f
+  rm -f /usr/src/app/data/wispro_bmu_production.sqlite3
+  ;;
 top)
   echo
   echo "Wispro Server"
