@@ -9,6 +9,7 @@ wispro_version="latest"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
+
 cat >> /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
@@ -20,9 +21,23 @@ apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ips
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
 
-
 echo "wispro-host" > /etc/hostname
 hostname -F /etc/hostname
+
+if [[ -n "$DEVELOPMENT" ]]; then
+  old_dir=$(pwd)
+  apk add git make
+  cd /tmp
+  git clone https://github.com/gentoo/gentoo-syntax.git
+  cd gentoo-syntax
+  make PREFIX=~/.vim/ install
+  cat > .vimrc <<EOF
+set tabstop=2
+set shiftwidth=2
+set softtabstop=2
+set expandtab
+EOF
+fi
 
 service docker start
 rc-update add docker default
