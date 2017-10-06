@@ -52,11 +52,11 @@ stop(){
   #fi
 }
 start(){
-  local name=$1 extra_args=""
-  if [[ "$2" == "sync" ]]; then
-    export RSYNC_WITH_DEVELOPER=true
+  local name=$1 extra_args="" rsync_with_developer_file=/usr/src/app/tmp/.rsync_with_developer
+  if [[ "${BASH_ARGV[0]}" == "sync" ]]; then
+    touch $rsync_with_developer_file
   else
-    unset RSYNC_WITH_DEVELOPER
+    [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
   if [[ $name == "server" ]];then
     extra_args="-p 80:3000"
