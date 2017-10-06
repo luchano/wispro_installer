@@ -33,7 +33,7 @@ is_running(){
   local name=$1
   if docker top $name &>/dev/null; then
     return 0
-  else 
+  else
     return 1
   fi
 }
@@ -53,6 +53,11 @@ stop(){
 }
 start(){
   local name=$1 extra_args=""
+  if [[ "$2" == "sync" ]]; then
+    export RSYNC_WITH_DEVELOPER=true
+  else
+    unset RSYNC_WITH_DEVELOPER
+  fi
   if [[ $name == "server" ]];then
     extra_args="-p 80:3000"
   fi
@@ -63,7 +68,7 @@ start(){
     else
       opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d ${extra_args} ${ENV_VARS} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
     fi
-    docker $opts  
+    docker $opts
     return $?
     #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
   fi
@@ -73,9 +78,9 @@ check)
   ;;
 start)
   start server
-  start daemon 
+  start daemon
   ;;
-stop) 
+stop)
   stop server
   stop daemon
   ;;
@@ -83,7 +88,7 @@ restart)
   stop server
   stop daemon
   start server
-  start daemon 
+  start daemon
   ;;
 upgrade)
   #TODO trap
