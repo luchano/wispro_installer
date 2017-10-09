@@ -77,18 +77,31 @@ case $1 in
 check)
   ;;
 start)
-  start server
-  start daemon
+  if [[ -n "${2}" ]];then
+    start ${2}
+  else
+    start server
+    start daemon
+  fi
   ;;
 stop)
-  stop server
-  stop daemon
+  if [[ -n "${2}" ]];then
+    stop ${2}
+  else
+    stop server
+    stop daemon
+  fi
   ;;
 restart)
-  stop server
-  stop daemon
-  start server
-  start daemon
+  if [[ -n "${2}" ]];then
+    stop ${2}
+    start ${2}
+  else
+    stop server
+    stop daemon
+    start server
+    start daemon
+  fi
   ;;
 upgrade)
   #TODO trap
