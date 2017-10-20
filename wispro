@@ -7,7 +7,7 @@ VOLUMES_PATH=/usr/src/app
 # Docker env vars for Wispro app
 ENV_VARS="-e MAIL_USER=admin@wispro.co"
 ENV_VARS="${ENV_VARS} -e MAIL_PASSWORD=12345678"
-ENV_VARS="${ENV_VARS} -e RABBIT_USER=wispromq"
+ENV_VARS="${ENV_VARS} -e RABBIT_USER=rabbitmq"
 ENV_VARS="${ENV_VARS} -e RABBIT_PASS=2k32eBkfrY8jx8V"
 ENV_VARS="${ENV_VARS} -e RABBIT_HOST=amqp.cloud.wispro.co"
 ENV_VARS="${ENV_VARS} -e RABBIT_VIRTUAL_HOST=sync.devel"
