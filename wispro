@@ -13,13 +13,14 @@ ENV_VARS="${ENV_VARS} -e RABBIT_HOST=amqp.cloud.wispro.co"
 ENV_VARS="${ENV_VARS} -e RABBIT_VIRTUAL_HOST=sync.devel"
 ENV_VARS="${ENV_VARS} -e SENTRY_PROTOCOL=https"
 ENV_VARS="${ENV_VARS} -e SENTRY_PUBLIC_KEY=ef9c130384880674ddefe3d6a4042a0f"
-ENV_VARS="${ENV_VARS} -e SENTRY_SECRET_KEY=3ee6a576fac8476ea902d8cc707cf960"
+ENV_VARS="${ENV_VARS} -e SENTRY_SECRET_KEY=efe3d6a4042a0f45b2af510f5e27ceac"
 ENV_VARS="${ENV_VARS} -e SENTRY_HOST=sentry.cloud.wispro.co"
 ENV_VARS="${ENV_VARS} -e SENTRY_PORT=443"
 ENV_VARS="${ENV_VARS} -e SENTRY_PROJECT=2"
 ENV_VARS="${ENV_VARS} -e SECRET_KEY_BASE=35105d6fc2396879b93f37144cbff0908922b8f2b9469828decb1ca87fd9b6023962c5991308b46920a4b8ed4beed9d2171452b211f08050f6922f51f104f80e"
 ENV_VARS="${ENV_VARS} -e DEVISE_SECRET_KEY_BASE=399dc04d0a869bc6b2338c7724290601109574ab2d244c409b930095cd32b090e254250c1771c7344ba1cdba2f4b119f0dad2be57c4561f03fc32c511ed2048a"
 ENV_VARS="${ENV_VARS} -e RSYNC_FULL_PATH=luchano@192.168.20.243:/home/luchano/src/wispro_bmu"
+ENV_VARS="${ENV_VARS} -e WISPRO_CLOUD_URL=https://www.cloud.wispro.co/"
 
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
@@ -39,7 +40,7 @@ is_running(){
 }
 container_exists(){
   local name=$1
-  if [[ $(docker ps -a -f "name=$name" --format '{{.Names}}') == $name ]]; then
+  if [[ $(docker ps -a -f "name=$name\$" --format '{{.Names}}') == $name ]]; then
     return 0
   else
     return 1
@@ -66,6 +67,7 @@ start(){
     if container_exists $full_name; then
       opts="start $full_name"
     else
+      echo "Initializing new docker container with version wispro/bmu:${VERSION}"
       opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d ${extra_args} ${ENV_VARS} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
     fi
     docker $opts
@@ -105,10 +107,13 @@ restart)
   ;;
 upgrade)
   #TODO trap
+  set -x
   new_version=$2
   if docker pull wispro/bmu:${new_version}; then
+    sleep 3 #give time to save bmu_update
     stop server
     stop daemon
+    #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp ${app_path}/wispro_bmu_production.sqlite3 ${app_path}/wispro_bmu_production.sqlite3.bak
     if container_exists wispro-server; then
       if container_exists wispro-server-bak; then
@@ -122,13 +127,19 @@ upgrade)
       fi
       docker container rename wispro-daemon wispro-daemon-bak
     fi
-    if start server && start daemon; then
+    VERSION=$new_version
+    start server
+    start daemon
+    sleep 30
+    if is_running wispro-server && is_running wispro-daemon; then
       exit 0
     else
-      docker container rename wispro-server-bak wispro-server
-      docker container rename wispro-daemon-bak wispro-daemon
-      start server
-      start daemon
+      #TODO VERSION=$old_version
+      #docker container rename wispro-server-bak wispro-server
+      #docker container rename wispro-daemon-bak wispro-daemon
+      #cp ${app_path}/wispro_bmu_production.sqlite3.bak ${app_path}/wispro_bmu_production.sqlite3
+      #start server
+      #start daemon
       echo "Upgrade to version ${new_version} failed."
       exit 1
     fi
@@ -168,5 +179,8 @@ top)
   echo
   echo "Wispro Daemon"
   docker top wispro-daemon
+  ;;
+*)
+  echo "error - wrong arguments"
   ;;
 esac
