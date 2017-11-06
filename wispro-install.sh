@@ -16,7 +16,7 @@ https://${alpine_mirror}/alpine/${alpine_version}/community
 END
 
 apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion
+apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
