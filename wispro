@@ -155,7 +155,7 @@ log)
   tail -n500 -F /usr/src/app/log/application.log
   ;;
 apply)
-  docker exec -it wispro-server /bin/bash -c "rails runner 'ApplyChanges.new.boot true'"
+  docker exec -it wispro-server /bin/bash -c "rails runner 'ApplyChanges.new.boot'"
   ;;
 bash-server)
   docker exec -it wispro-server /bin/bash
