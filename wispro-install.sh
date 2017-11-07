@@ -76,7 +76,7 @@ auto lo
 iface lo inet loopback
 END
 
-wispro start
+VERSION=${wispro_version} wispro start
 
 sleep 3
 echo  <<EOF

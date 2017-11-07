@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 
-VERSION=latest
+#VERSION=latest
 VOLUMES_PATH=/usr/src/app
 
 # Docker env vars for Wispro app
