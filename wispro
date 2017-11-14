@@ -12,8 +12,8 @@ ENV_VARS="${ENV_VARS} -e RABBIT_PASS=2k32eBkfrY8jx8V"
 ENV_VARS="${ENV_VARS} -e RABBIT_HOST=amqp.cloud.wispro.co"
 ENV_VARS="${ENV_VARS} -e RABBIT_VIRTUAL_HOST=sync.devel"
 ENV_VARS="${ENV_VARS} -e SENTRY_PROTOCOL=https"
-ENV_VARS="${ENV_VARS} -e SENTRY_PUBLIC_KEY=ef9c130384880674ddefe3d6a4042a0f"
-ENV_VARS="${ENV_VARS} -e SENTRY_SECRET_KEY=efe3d6a4042a0f45b2af510f5e27ceac"
+ENV_VARS="${ENV_VARS} -e SENTRY_PUBLIC_KEY=ef74180b8fe547f78d9f40ccf2fe651a"
+ENV_VARS="${ENV_VARS} -e SENTRY_SECRET_KEY=3ee6a576fac8476ea902d8cc707cf960"
 ENV_VARS="${ENV_VARS} -e SENTRY_HOST=sentry.cloud.wispro.co"
 ENV_VARS="${ENV_VARS} -e SENTRY_PORT=443"
 ENV_VARS="${ENV_VARS} -e SENTRY_PROJECT=2"
@@ -113,8 +113,9 @@ upgrade)
     sleep 3 #give time to save bmu_update
     stop server
     stop daemon
+    app_path=/usr/src/app
     #TODO reemplazar bak por el nro de version o algo así para poder volver
-    cp ${app_path}/wispro_bmu_production.sqlite3 ${app_path}/wispro_bmu_production.sqlite3.bak
+    cp ${app_path}/data/wispro_bmu_production.sqlite3 ${app_path}/data/wispro_bmu_production.sqlite3.bak
     if container_exists wispro-server; then
       if container_exists wispro-server-bak; then
         docker container rm wispro-server-bak
