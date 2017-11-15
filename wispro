@@ -1,26 +1,8 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 
-#VERSION=latest
 VOLUMES_PATH=/usr/src/app
-
-# Docker env vars for Wispro app
-ENV_VARS="-e MAIL_USER=admin@wispro.co"
-ENV_VARS="${ENV_VARS} -e MAIL_PASSWORD=12345678"
-ENV_VARS="${ENV_VARS} -e RABBIT_USER=rabbitmq"
-ENV_VARS="${ENV_VARS} -e RABBIT_PASS=2k32eBkfrY8jx8V"
-ENV_VARS="${ENV_VARS} -e RABBIT_HOST=amqp.cloud.wispro.co"
-ENV_VARS="${ENV_VARS} -e RABBIT_VIRTUAL_HOST=sync.devel"
-ENV_VARS="${ENV_VARS} -e SENTRY_PROTOCOL=https"
-ENV_VARS="${ENV_VARS} -e SENTRY_PUBLIC_KEY=ef74180b8fe547f78d9f40ccf2fe651a"
-ENV_VARS="${ENV_VARS} -e SENTRY_SECRET_KEY=3ee6a576fac8476ea902d8cc707cf960"
-ENV_VARS="${ENV_VARS} -e SENTRY_HOST=sentry.cloud.wispro.co"
-ENV_VARS="${ENV_VARS} -e SENTRY_PORT=443"
-ENV_VARS="${ENV_VARS} -e SENTRY_PROJECT=2"
-ENV_VARS="${ENV_VARS} -e SECRET_KEY_BASE=35105d6fc2396879b93f37144cbff0908922b8f2b9469828decb1ca87fd9b6023962c5991308b46920a4b8ed4beed9d2171452b211f08050f6922f51f104f80e"
-ENV_VARS="${ENV_VARS} -e DEVISE_SECRET_KEY_BASE=399dc04d0a869bc6b2338c7724290601109574ab2d244c409b930095cd32b090e254250c1771c7344ba1cdba2f4b119f0dad2be57c4561f03fc32c511ed2048a"
-ENV_VARS="${ENV_VARS} -e RSYNC_FULL_PATH=luchano@192.168.20.243:/home/luchano/src/wispro_bmu"
-ENV_VARS="${ENV_VARS} -e CLOUD_HOST=www.cloud.wispro.co"
+DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
@@ -28,7 +10,6 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
-
 
 is_running(){
   local name=$1
@@ -46,6 +27,22 @@ container_exists(){
     return 1
   fi
 }
+daemon_is_running (){
+  local daemon=$1
+  for daemon_running in $daemons_running; do
+    [[ $daemon_to_check == $daemon_running ]] && return 0
+  done
+  return 1
+}
+daemons_are_running(){
+  local found=0
+  daemons_running=$(docker top wispro-daemon | grep ruby | awk '{print $5}')
+  for daemon_to_check in $DAEMONS_TO_CHECK_AFTER_UPGRADE; do
+    daemon_is_running daemon_to_check || return 1
+  done
+  return 0
+}
+
 stop(){
   local name=wispro-${1}
   #if is_running $name; then
@@ -67,8 +64,14 @@ start(){
     if container_exists $full_name; then
       opts="start $full_name"
     else
-      echo "Initializing new docker container with version wispro/bmu:${VERSION}"
-      opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d ${extra_args} ${ENV_VARS} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
+      if [[ -z "${VERSION}" ]]; then
+        echo "VERSION= is unset, please run: "
+        echo "# VERSION=version_number wispro start"
+        exit 1
+      else
+        echo "Initializing new docker container with version wispro/bmu:${VERSION}"
+        opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
+      fi
     fi
     docker $opts
     return $?
@@ -108,14 +111,16 @@ restart)
 upgrade)
   #TODO trap
   set -x
+  old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
   new_version=$2
   if docker pull wispro/bmu:${new_version}; then
     sleep 3 #give time to save bmu_update
     stop server
     stop daemon
-    app_path=/usr/src/app
+    db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
-    cp ${app_path}/data/wispro_bmu_production.sqlite3 ${app_path}/data/wispro_bmu_production.sqlite3.bak
+    cp $db_path ${db_path}.bak
+
     if container_exists wispro-server; then
       if container_exists wispro-server-bak; then
         docker container rm wispro-server-bak
@@ -132,15 +137,24 @@ upgrade)
     start server
     start daemon
     sleep 30
-    if is_running wispro-server && is_running wispro-daemon; then
+    if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
+      # Check server container with for example an its_alive via http
       exit 0
     else
-      #TODO VERSION=$old_version
-      #docker container rename wispro-server-bak wispro-server
-      #docker container rename wispro-daemon-bak wispro-daemon
-      #cp ${app_path}/wispro_bmu_production.sqlite3.bak ${app_path}/wispro_bmu_production.sqlite3
-      #start server
-      #start daemon
+      VERSION=$old_version
+      stop server
+      stop daemon
+      if container_exists wispro-server; then
+        docker container rm wispro-server
+      fi
+      docker container rename wispro-server-bak wispro-server
+      if container_exists wispro-daemon; then
+        docker container rm wispro-daemon
+      fi
+      docker container rename wispro-daemon-bak wispro-daemon
+      cp $db_path.bak ${db_path}
+      start server
+      start daemon
       echo "Upgrade to version ${new_version} failed."
       exit 1
     fi
@@ -168,9 +182,12 @@ reset)
   echo "Deleting all containers and Wispro database, are you sure?"
   echo "(Pres Ctrl-c to cancel/Enter to continue)"
   read dummy
+  VERSION=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
   stop server
   stop daemon
   docker container prune -f
+  start server
+  start daemon
   #rm -f /usr/src/app/data/wispro_bmu_production.sqlite3
   ;;
 top)
