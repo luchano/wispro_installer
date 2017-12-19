@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
-
+WISPRO_URL="https://www.cloud.wispro.co"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 
@@ -10,6 +10,8 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
+VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/dhcp"
+VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/ppp"
 
 is_running(){
   local name=$1
@@ -110,16 +112,60 @@ restart)
   ;;
 upgrade)
   #TODO trap
-  set -x
-  old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
-  new_version=$2
-  if docker pull wispro/bmu:${new_version}; then
-    sleep 3 #give time to save bmu_update
+  do_exit(){
+    if [[ "$1" == "restore_old_version" ]]; then
+      restore_old_version
+    fi
+    echo "Upgrade to version ${new_version} failed."
+    exit 1
+  }
+  restore_old_version(){
+    VERSION=$old_version
     stop server
     stop daemon
+    if container_exists wispro-server; then
+      docker container rm wispro-server
+    fi
+    docker container rename wispro-server-bak wispro-server
+    if container_exists wispro-daemon; then
+      docker container rm wispro-daemon
+    fi
+    docker container rename wispro-daemon-bak wispro-daemon
+    cp $db_path.bak ${db_path}
+    start server
+    start daemon
+  }
+  apply_patches(){
+    action=$1
+    restore=$2
+    patch_file=$(mktemp)
+    status_code=$(curl -w "%{http_code}" -o $patch_file "${WISPRO_URL}/bmu_versions/${action}?api_token=${api_token}&from=${old_version}&to=${new_version}")
+    if [[ "$status_code" == "200" ]]; then
+      if [[ "$(/bin/bash $patch_file TEST)" == "OK" ]];then
+        cat $patch_file
+        if ! /bin/bash $patch_file; then
+          do_exit $restore
+        fi
+      else
+        do_exit $restore
+      fi
+    else
+      do_exit $restore
+    fi
+  }
+  set -x
+  new_version=$2
+  # usamos xargs al final para hacer un simil chomp
+  api_token=$(docker exec -it wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | xargs)
+  if docker pull wispro/bmu:${new_version}; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
+    old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
+    apply_patches "patches_pre"
+    sleep 3 #give time to save bmu_update
+    stop server
+    stop daemon
 
     if container_exists wispro-server; then
       if container_exists wispro-server-bak; then
@@ -139,28 +185,14 @@ upgrade)
     sleep 30
     if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
       # Check server container with for example an its_alive via http
+      apply_patches "patches_post" "restore_old_version"
       exit 0
     else
-      VERSION=$old_version
-      stop server
-      stop daemon
-      if container_exists wispro-server; then
-        docker container rm wispro-server
-      fi
-      docker container rename wispro-server-bak wispro-server
-      if container_exists wispro-daemon; then
-        docker container rm wispro-daemon
-      fi
-      docker container rename wispro-daemon-bak wispro-daemon
-      cp $db_path.bak ${db_path}
-      start server
-      start daemon
-      echo "Upgrade to version ${new_version} failed."
-      exit 1
+      restore_old_version
+      do_exit
     fi
   else
-    echo "Upgrade to version ${new_version} failed."
-    exit 1
+    do_exit
   fi
   ;;
 console)
