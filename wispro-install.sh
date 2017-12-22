@@ -5,10 +5,27 @@
 
 alpine_version="v3.6"
 alpine_mirror="dl-3.alpinelinux.org"
-wispro_version="0.0.21"
+wispro_version="0.0.24"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
+
+echoerr() { printf "%s\n" "$*" >&2; }
+finish() {
+  local last_status=$?
+  local last_command=${BASH_COMMAND}
+  if [[ $last_status -eq 0 ]]; then
+    echo "Wispro Install Successful"
+    exit 0
+  else
+    echoerr "Wispro Install Failed on command: ${last_command}"
+    exit 1
+  fi
+}
+trap finish EXIT
+set -e
+
+
 
 cat >> /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
@@ -16,7 +33,7 @@ https://${alpine_mirror}/alpine/${alpine_version}/community
 END
 
 apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata
+apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
@@ -65,8 +82,16 @@ mv ${wispro_dir}/data/.ssh/bmu-rsa.pub /root/.ssh/authorized_keys
 docker pull wispro/bmu:${wispro_version}
 
 # setup de wispro
-curl -s $wispro_binary_url > $wispro_binary
+curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
 chmod +x $wispro_binary
+if [[ "$(curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary})" == "200" ]]; then
+  chmod +x ${wispro_binary}
+  if ! [[ "$(${wispro_binary} version)" == "${wispro_version}" ]]; then
+    exit 1
+  fi
+else
+  exit 1
+fi
 
 # Plug-off legacy interfaces configurations
 service networking stop
