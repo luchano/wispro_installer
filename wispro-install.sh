@@ -101,6 +101,11 @@ auto lo
 iface lo inet loopback
 END
 
+cat > /etc/resolv.conf <<END
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+END
+
 VERSION=${wispro_version} wispro start
 
 sleep 3
