@@ -1,9 +1,10 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.1.0"
+FOR_BMU_VERSION="0.1.99"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
+WISPRO_SCRIPT_FILE=${BASH_SOURCE}
 
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
@@ -154,8 +155,28 @@ upgrade)
       do_exit $restore
     fi
   }
+  download_new_wispro(){
+    tmp_script=$(mktemp)
+    http_code=$(curl -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${new_version}/wispro" -o $tmp_script)
+    if [[ $? -eq 0 && "${http_code}" = "200" && "$(/bin/bash ${tmp_script} version)" = "${new_version}" ]] && \
+      #cp ${WISPRO_SCRIPT_FILE} ${WISPRO_SCRIPT_FILE}.bak && \
+      cp $tmp_script ${WISPRO_SCRIPT_FILE} && \
+      chmod 755 ${WISPRO_SCRIPT_FILE} ; then
+      exec ${WISPRO_SCRIPT_FILE} upgrade ${new_version}  &>/usr/src/app/log/wispro_upgrade_to_${new_version}
+      echo esto no se tendría que ver
+    else
+      echo "Unable to download and test wispro script with tag: ${new_version}"
+    fi
+    do_exit
+  }
   set -x
   new_version=$2
+  if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
+    WISPRO_SCRIPT_FILE=/tmp/wispro
+    download_new_wispro
+  fi
+  echo RUNNING GOOD
+  exit 0
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | xargs)
   if docker pull wispro/bmu:${new_version}; then
