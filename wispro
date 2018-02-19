@@ -161,9 +161,12 @@ upgrade)
     http_code=$(curl -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${new_version}/wispro" -o $tmp_script)
     if [[ $? -eq 0 && "${http_code}" = "200" && "$(/bin/bash ${tmp_script} version)" = "${new_version}" ]] && \
       #cp ${WISPRO_SCRIPT_FILE} ${WISPRO_SCRIPT_FILE}.bak && \
-      cp $tmp_script ${WISPRO_SCRIPT_FILE} && \
-      chmod 755 ${WISPRO_SCRIPT_FILE} ; then
+      chmod 755 ${tmp_script} && \
+      cp $tmp_script ${WISPRO_SCRIPT_FILE}; then
       [ -d ${LOG_PATH} ] || mkdir -p $LOG_PATH
+      # Empezamos de nuevo con el upgrade, pero ya tenemos la nueva versión de wispro (el script)
+      # que acaba de pisar este mismo script que estamos ejecutando, por eso hacemos exec
+      # para asegurarnos de salir del current script y ejectuar el que acabamos de bajar
       exec ${WISPRO_SCRIPT_FILE} upgrade ${new_version}  &>${LOG_PATH}/wispro_upgrade_to_${new_version}
       echo "If you read this message then something had gone seriously WRONG"
     else
