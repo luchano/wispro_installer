@@ -62,7 +62,7 @@ start(){
     [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
   if [[ $name == "server" ]];then
-    extra_args="-p 80:3000"
+    extra_args="-p 80:3000 -p 443:443"
   fi
   full_name=wispro-${name}
   if ! is_running $full_name; then
