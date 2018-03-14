@@ -59,6 +59,10 @@ fi
 service docker start
 rc-update add docker default
 
+# damos tiempo a que levante dockerd
+echo "Waiting for docker to start..."
+sleep 5
+
 # Docker compose is no longer needed, using docker exec/run directly
 #curl -L --fail https://github.com/docker/compose/releases/download/1.15.0/run.sh -o /usr/local/bin/docker-compose
 #chmod +x /usr/local/bin/docker-compose
