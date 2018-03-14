@@ -1,5 +1,5 @@
 #!/bin/sh -e
-VERSION="testing_0.1.4"
+VERSION="testing_0.1.5"
 HOSTNAME="$1"
 VOL_DIR="/etc/wispro"
 if [ -z "$HOSTNAME" ]; then
@@ -108,6 +108,21 @@ ruby
 dialog
 EOF
 
-#rc_add syslog boot
+rc_add devfs sysinit
+rc_add dmesg sysinit
+rc_add mdev sysinit
+rc_add hwdrivers sysinit
+rc_add modloop sysinit
+
+rc_add hwclock boot
+rc_add modules boot
+rc_add sysctl boot
+rc_add hostname boot
+rc_add bootmisc boot
+rc_add syslog boot
+
+rc_add mount-ro shutdown
+rc_add killprocs shutdown
+rc_add savecache shutdown
 
 tar -c -C "$tmp" etc | gzip -9n > $HOSTNAME.apkovl.tar.gz

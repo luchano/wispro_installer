@@ -3,7 +3,6 @@ profile_wispro() {
 	title="Extended"
 	desc="Wispro profile"
 	kernel_addons="xtables-addons"
-        apkovl="genapkovl-wispro.sh"
 	apks="$apks
                 iptables iproute2 mii-tool ethtool fping curl 
                 conntrack-tools 
@@ -33,5 +32,6 @@ profile_wispro() {
 		done
 	done
 	apks="$apks linux-firmware"
-	hostname="winstaller"
+        apkovl="genapkovl-wispro.sh"
+	hostname="wispro-host"
 }
