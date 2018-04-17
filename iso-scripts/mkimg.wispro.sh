@@ -4,8 +4,8 @@ profile_wispro() {
 	desc="Wispro profile"
 	kernel_addons="xtables-addons"
 	apks="$apks
-                iptables iproute2 mii-tool ethtool fping curl 
-                conntrack-tools 
+                iptables iproute2 mii-tool ethtool fping curl
+                conntrack-tools
                 ipset dnsmasq bash bash-completion docker
 		logrotate lsof vim
 		pax-utils paxmark pciutils screen strace sudo tmux
@@ -15,13 +15,13 @@ profile_wispro() {
 		ca-certificates cutter cyrus-sasl dhcp
 		dhcpcd dhcrelay dnsmasq email fprobe haserl htop
 		igmpproxy ip6tables iproute2-qos
-		iputils 
-		ppp 
-		tcpdump 
+		iputils
+		ppp
+		tcpdump
 
 		mkinitfs mtools nfs-utils
 		parted rsync sfdisk syslinux util-linux
-		ruby dialog
+		ruby dialog expect
 		"
 
 	local _k _a

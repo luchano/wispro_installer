@@ -107,6 +107,7 @@ util-linux
 tzdata
 ruby
 dialog
+expect
 EOF
 
 rc_add devfs sysinit
