@@ -40,7 +40,7 @@ mrdialog_gemfile="mrdialog-1.0.3.gem"
 makefile root:root 0755 "$tmp"/${VOL_DIR}/install <<EOF
 gem install --local ${VOL_DIR}/${mrdialog_gemfile}
 ${VOL_DIR}/wispro_installer/alpine-install.rb
-${VOL_DIR}/expect.sh
+${VOL_DIR}/wispro_installer/expect.sh
 EOF
 
 curl -sL https://github.com/muquit/mrdialog/blob/master/pkg/mrdialog-1.0.3.gem?raw=true > ${tmp}/${VOL_DIR}/${mrdialog_gemfile}
