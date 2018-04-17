@@ -5,7 +5,7 @@ require 'ipaddr'
 
 RESOLV_CONF_FILE="resolv.conf"
 INTERFACES_FILE="interfaces"
-ALPINE_ANSWERS_FILE="answers"
+ALPINE_ANSWERS_FILE="/etc/wispro/answers"
 HEIGHT = 16
 WIDTH = 51
 class DialogConfigNet
@@ -111,7 +111,8 @@ if net.ask_values
       f.puts "DNSOPTS='-d example.com 8.8.8.8 8.8.4.4'"
       f.puts "TIMEZONEOPTS='-z UTC'"
       f.puts "PROXYOPTS='none'"
-      f.puts "APKREPOSOPTS='http://dl-cdn.alpinelinux.org/alpine/v3.6/main
+      f.puts "APKREPOSOPTS='/media/cdrom/apks
+http://dl-cdn.alpinelinux.org/alpine/v3.6/main
 http://dl-cdn.alpinelinux.org/alpine/v3.6/community
 https://dl-3.alpinelinux.org/alpine/v3.6/main
 https://dl-3.alpinelinux.org/alpine/v3.6/community
