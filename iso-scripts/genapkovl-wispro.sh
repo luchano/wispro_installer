@@ -1,5 +1,5 @@
 #!/bin/sh -e
-VERSION="testing_0.1.5"
+VERSION="testing_0.1.6"
 HOSTNAME="$1"
 VOL_DIR="/etc/wispro"
 if [ -z "$HOSTNAME" ]; then
