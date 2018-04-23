@@ -68,10 +68,11 @@ rc-update add docker default
 # Wispro BMU app
 mkdir -p ${wispro_dir}
 mkdir -p ${wispro_dir}/data
-mkdir -p ${wispro_dir}/tmp
-mkdir -p ${wispro_dir}/log
 mkdir -p ${wispro_dir}/etc
+mkdir -p ${wispro_dir}/log
+mkdir -p ${wispro_dir}/private
 mkdir -p ${wispro_dir}/scripts
+mkdir -p ${wispro_dir}/tmp
 
 mkdir /root/.ssh && chmod 700 /root/.ssh
 mkdir ${wispro_dir}/data/.ssh && chmod 700 ${wispro_dir}/data/.ssh
@@ -80,6 +81,7 @@ mv ${wispro_dir}/data/.ssh/bmu-rsa.pub /root/.ssh/authorized_keys
 
 # install de la app
 docker pull wispro/bmu:${wispro_version}
+docker pull nginx:1-alpine
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
@@ -92,6 +94,11 @@ if [[ "$(curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installe
 else
   exit 1
 fi
+
+# Setup Nginx
+curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/nginx/nginx.conf" -o ${wispro_dir}/data/nginx.conf
+curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/nginx/cert.pem" -o ${wispro_dir}/data/cert.pem
+curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/nginx/cert.key" -o ${wispro_dir}/data/cert.key
 
 # Plug-off legacy interfaces configurations
 service networking stop
