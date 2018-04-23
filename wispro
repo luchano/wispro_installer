@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.1.6"
+FOR_BMU_VERSION="0.1.7"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
