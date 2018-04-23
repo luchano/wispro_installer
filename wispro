@@ -12,7 +12,7 @@ NGINX=nginx
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
-VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/public:/usr/src/app/public"  # public assets
+VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/public/assets:/usr/src/app/public/assets"  # public assets
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
@@ -25,12 +25,13 @@ NGINX_VOLUMES="${NGINX_VOLUMES} -v ${VOLUMES_PATH}/data:/app/data"  # Certs
 NGINX_VOLUMES="${NGINX_VOLUMES} -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
 
 run_nginx() {
-
   if container_exists $NGINX; then
     docker start $NGINX
   else
-    # habria que meter el nginx.conf en data
-    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d --name $NGINX -h $NGINX --link wispro-server:wispro-server -p 80:80 -p 443:443 -v $VOLUMES_PATH/data/nginx.conf:/etc/nginx/nginx.conf:ro $NGINX_VOLUMES"
+    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+    $extra_params="${extra_params} -d --name $NGINX -h $NGINX --link wispro-server:wispro-server -p 80:80 -p 443:443"
+    $extra_params="${extra_params} -v $VOLUMES_PATH/data/nginx.conf:/etc/nginx/nginx.conf:ro $NGINX_VOLUMES"
+
     docker run $extra_params nginx:1-alpine
   fi
 }
@@ -46,7 +47,6 @@ start_nginx() {
 
   run_nginx
 }
-
 
 is_running(){
   local name=$1
@@ -96,9 +96,7 @@ start(){
   else
     [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
-  # if [[ $name == "server" ]];then
-  #   extra_args="-p 80:3000"
-  # fi
+
   full_name=wispro-${name}
   if ! is_running $full_name; then
     if container_exists $full_name; then
