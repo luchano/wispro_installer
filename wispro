@@ -21,14 +21,14 @@ NGINX=nginx
 
 # NGINX shared dirs
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
-NGINX_VOLUMES="${NGINX_VOLUMES} -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
+NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
 
 run_nginx() {
   if container_exists $NGINX; then
     docker start $NGINX
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    $extra_params="${extra_params} -d --name $NGINX -h $NGINX --link wispro-server -p 80:80 -p 443:443 $NGINX_VOLUMES"
+    extra_params="$extra_params -d --name $NGINX -h $NGINX --link wispro-server -p 80:80 -p 443:443 $NGINX_VOLUMES"
 
     docker run $extra_params wispro/bmu_nginx:latest
   fi

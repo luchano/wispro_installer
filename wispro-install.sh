@@ -130,7 +130,7 @@ http://192.168.100.100
 Usuario: admin@wispro.co
 Password: 12345678
 
-Wispro had been successfuly installed.
+Wispro had been successfully installed.
 
 You may now access the web interface from a desktop computer at
 
