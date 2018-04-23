@@ -7,8 +7,6 @@ DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_co
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
 LOG_PATH=/usr/src/app/log
 
-NGINX=nginx
-
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
@@ -19,9 +17,10 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
 VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/dhcp"
 VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/ppp"
 
+NGINX=nginx
+
 # NGINX shared dirs
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
-NGINX_VOLUMES="${NGINX_VOLUMES} -v ${VOLUMES_PATH}/data:/app/data"  # Certs
 NGINX_VOLUMES="${NGINX_VOLUMES} -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
 
 run_nginx() {
@@ -29,10 +28,9 @@ run_nginx() {
     docker start $NGINX
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    $extra_params="${extra_params} -d --name $NGINX -h $NGINX --link wispro-server:wispro-server -p 80:80 -p 443:443"
-    $extra_params="${extra_params} -v $VOLUMES_PATH/data/nginx.conf:/etc/nginx/nginx.conf:ro $NGINX_VOLUMES"
+    $extra_params="${extra_params} -d --name $NGINX -h $NGINX --link wispro-server -p 80:80 -p 443:443 $NGINX_VOLUMES"
 
-    docker run $extra_params nginx:1-alpine
+    docker run $extra_params wispro/bmu_nginx:latest
   fi
 }
 
