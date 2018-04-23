@@ -72,10 +72,10 @@ sleep 5
 # Wispro BMU app
 mkdir -p ${wispro_dir}
 mkdir -p ${wispro_dir}/data
-mkdir -p ${wispro_dir}/tmp
-mkdir -p ${wispro_dir}/log
 mkdir -p ${wispro_dir}/etc
+mkdir -p ${wispro_dir}/log
 mkdir -p ${wispro_dir}/scripts
+mkdir -p ${wispro_dir}/tmp
 
 mkdir /root/.ssh && chmod 700 /root/.ssh
 mkdir ${wispro_dir}/data/.ssh && chmod 700 ${wispro_dir}/data/.ssh
@@ -84,6 +84,7 @@ mv ${wispro_dir}/data/.ssh/bmu-rsa.pub /root/.ssh/authorized_keys
 
 # install de la app
 docker pull wispro/bmu:${wispro_version}
+docker pull wispro/bmu_nginx:latest
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
@@ -133,7 +134,7 @@ http://192.168.100.100
 Usuario: admin@wispro.co
 Password: 12345678
 
-Wispro had been successfuly installed.
+Wispro had been successfully installed.
 
 You may now access the web interface from a desktop computer at
 
