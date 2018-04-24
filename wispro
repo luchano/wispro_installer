@@ -227,6 +227,10 @@ upgrade)
     stop server
     stop daemon
 
+    if container_exists $NGINX; then
+      docker container rm $NGINX
+    fi
+
     if container_exists wispro-server; then
       if container_exists wispro-server-bak; then
         docker container rm wispro-server-bak
