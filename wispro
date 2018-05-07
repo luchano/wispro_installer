@@ -15,7 +15,7 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
 VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/dhcp"
-VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/ppp"
+VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 
 NGINX=nginx
 
