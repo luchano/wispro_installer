@@ -28,7 +28,7 @@ run_nginx() {
     docker start $NGINX
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    extra_params="$extra_params -d --name $NGINX -h $NGINX --link wispro-server -p 80:80 -p 443:443 $NGINX_VOLUMES"
+    extra_params="$extra_params -d --network host --name $NGINX -h $NGINX -p 80:80 -p 443:443 $NGINX_VOLUMES"
 
     docker run $extra_params wispro/bmu_nginx:latest
   fi
@@ -94,6 +94,10 @@ start(){
   else
     [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
+  if [[ $name == "server" ]];then
+    extra_args="-p 3000:3000"
+  fi
+
 
   full_name=wispro-${name}
   if ! is_running $full_name; then
@@ -217,7 +221,7 @@ upgrade)
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | xargs)
-  if docker pull wispro/bmu:${new_version}; then
+  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:latest; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
@@ -293,6 +297,9 @@ top)
   echo
   echo "Wispro Daemon"
   docker top wispro-daemon
+  echo
+  echo "Wispro Nginx"
+  docker top nginx
   ;;
 # Con esto verifco que este todo ok después de bajar el archivo
 version)
