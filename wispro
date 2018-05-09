@@ -2,6 +2,7 @@
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
 FOR_BMU_VERSION="0.1.8"
+BMU_NGINX_VERSION="1.1"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
@@ -30,7 +31,7 @@ run_nginx() {
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
     extra_params="$extra_params -d --network host --name $NGINX -h $NGINX -p 80:80 -p 443:443 $NGINX_VOLUMES"
 
-    docker run $extra_params wispro/bmu_nginx:latest
+    docker run $extra_params wispro/bmu_nginx:${BMU_NGINX_VERSION}
   fi
 }
 
@@ -221,7 +222,7 @@ upgrade)
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | xargs)
-  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:latest; then
+  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
