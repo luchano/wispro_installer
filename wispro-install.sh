@@ -84,7 +84,7 @@ mv ${wispro_dir}/data/.ssh/bmu-rsa.pub /root/.ssh/authorized_keys
 
 # install de la app
 docker pull wispro/bmu:${wispro_version}
-docker pull wispro/bmu_nginx:latest
+docker pull wispro/bmu_nginx:1.1
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
