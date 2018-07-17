@@ -2,7 +2,7 @@
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
 FOR_BMU_VERSION="0.1.14"
-BMU_NGINX_VERSION="1.1"
+BMU_NGINX_VERSION="1.2"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
@@ -221,7 +221,7 @@ upgrade)
     download_new_wispro
   fi
   # usamos xargs al final para hacer un simil chomp
-  api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | xargs)
+  api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
   if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver

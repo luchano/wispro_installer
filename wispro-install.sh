@@ -9,6 +9,7 @@ wispro_version="0.1.14"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
+BMU_NGINX_VERSION="1.2"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
@@ -84,7 +85,7 @@ mv ${wispro_dir}/data/.ssh/bmu-rsa.pub /root/.ssh/authorized_keys
 
 # install de la app
 docker pull wispro/bmu:${wispro_version}
-docker pull wispro/bmu_nginx:1.1
+docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
