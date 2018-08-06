@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.1.16"
+FOR_BMU_VERSION="0.1.17"
 BMU_NGINX_VERSION="1.2"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
@@ -46,6 +46,7 @@ start_nginx() {
 
   run_nginx
 }
+
 FREERADIUS=freeradius
 FREERADIUS_VOLUMES="-v /usr/src/app/data/clients.conf:/etc/raddb/clients.conf"
 FREERADIUS_VOLUMES="$FREERADIUS_VOLUMES -v /usr/src/app/data/users:/etc/raddb/users"  # public assets
@@ -67,6 +68,30 @@ start_freeradius() {
 
 stop_freeradius() {
   docker stop $FREERADIUS
+}
+
+DNSMASQ=dnsmasq
+DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
+DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
+DNSMASQ_VOLUMES="-v /etc/resolv.conf:/etc/resolv.conf"
+
+start_dnsmasq() {
+  if ! is_running $DNSMASQ; then
+    if container_exists $DNSMASQ; then
+      docker start $DNSMASQ
+    else
+      echo "Initializing new docker container with version andyshinn/dnsmasq"
+      local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $DNSMASQ -h $DNSMASQ -p 53:53/tcp -p 53:53/udp --cap-add=NET_ADMIN $DNSMASQ_VOLUMES"
+      docker run $extra_params andyshinn/dnsmasq:latest
+    fi
+    return $?
+    #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
+  fi
+}
+
+stop_dnsmasq() {
+  docker stop $DNSMASQ
 }
 
 is_running(){
@@ -151,11 +176,19 @@ check)
   ;;
 start)
   if [[ -n "${2}" ]];then
-    if [[ $2 == $FREERADIUS ]];then
-      start_freeradius
-    else
-      start ${2}
-    fi
+    case $2 in
+    $FREERADIUS)
+      start_freeradius;;
+    $DNSMASQ)
+      start_dnsmasq;;
+    *)
+      start ${2};;
+    esac
+    # if [[ $2 == $FREERADIUS ]];then
+    #   start_freeradius
+    # else
+    #   start ${2}
+    # fi
   else
     start server
     start daemon
@@ -163,11 +196,19 @@ start)
   ;;
 stop)
   if [[ -n "${2}" ]];then
-    if [[ $2 == $FREERADIUS ]];then
-      stop_freeradius
-    else
-      stop ${2}
-    fi
+    case $2 in
+    $FREERADIUS)
+      start_freeradius;;
+    $DNSMASQ)
+      start_dnsmasq;;
+    *)
+      start ${2};;
+    esac
+    # if [[ $2 == $FREERADIUS ]];then
+    #   stop_freeradius
+    # else
+    #   stop ${2}
+    # fi
   else
     stop server
     stop daemon
@@ -252,7 +293,7 @@ upgrade)
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
-  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull marcelmaatkamp/freeradius:latest; then
+  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull marcelmaatkamp/freeradius:latest && docker pull andyshinn/dnsmasq:latest; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
