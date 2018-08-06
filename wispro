@@ -54,13 +54,13 @@ FREERADIUS_VOLUMES="$FREERADIUS_VOLUMES -v /usr/src/app/data/users:/etc/raddb/us
 start_freeradius() {
   if ! is_running $FREERADIUS; then
     if container_exists $FREERADIUS; then
-      opts="start $FREERADIUS"
+      docker start $FREERADIUS
     else
       echo "Initializing new docker container with version marcelmaatkamp/freeradius:latest"
       local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
       extra_params="$extra_params -d --network host --name $FREERADIUS -h $FREERADIUS -p 1812:1812/udp  -p 1813:1813 -p 18120:18120 $FREERADIUS_VOLUMES marcelmaatkamp/freeradius:latest"
+      docker run $extra_params
     fi
-    docker run $extra_params
     return $?
     #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
   fi
