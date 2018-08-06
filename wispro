@@ -46,6 +46,28 @@ start_nginx() {
 
   run_nginx
 }
+FREERADIUS=freeradius
+FREERADIUS_VOLUMES="-v /usr/src/app/data/clients.conf:/etc/raddb/clients.conf"
+FREERADIUS_VOLUMES="$FREERADIUS_VOLUMES -v /usr/src/app/data/users:/etc/raddb/users"  # public assets
+
+start_freeradius() {
+  if ! is_running $FREERADIUS; then
+    if container_exists $FREERADIUS; then
+      opts="start $FREERADIUS"
+    else
+      echo "Initializing new docker container with version marcelmaatkamp/freeradius:latest"
+      local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $FREERADIUS -h $FREERADIUS -p 1812:1812/udp  -p 1813:1813 -p 18120:18120 $FREERADIUS_VOLUMES marcelmaatkamp/freeradius:latest"
+    fi
+    docker run $extra_params
+    return $?
+    #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
+  fi
+}
+
+stop_freeradius() {
+  docker stop $FREERADIUS
+}
 
 is_running(){
   local name=$1
@@ -129,7 +151,11 @@ check)
   ;;
 start)
   if [[ -n "${2}" ]];then
-    start ${2}
+    if [[ $2 == $FREERADIUS ]];then
+      start_freeradius
+    else
+      start ${2}
+    fi
   else
     start server
     start daemon
@@ -137,7 +163,11 @@ start)
   ;;
 stop)
   if [[ -n "${2}" ]];then
-    stop ${2}
+    if [[ $2 == $FREERADIUS ]];then
+      stop_freeradius
+    else
+      stop ${2}
+    fi
   else
     stop server
     stop daemon
@@ -222,7 +252,7 @@ upgrade)
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
-  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}; then
+  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull marcelmaatkamp/freeradius:latest; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
