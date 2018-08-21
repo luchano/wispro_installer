@@ -83,10 +83,10 @@ start_dnsmasq() {
     else
       echo "Stop local dnsmasq"
       service dnsmasq stop
-      echo "Initializing new docker container with version andyshinn/dnsmasq"
+      echo "Initializing new docker container with version wispro/dnsmasq"
       local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
       extra_params="$extra_params -d --network host --name $DNSMASQ -h $DNSMASQ -p 53:53/tcp -p 53:53/udp --cap-add=NET_ADMIN $DNSMASQ_VOLUMES"
-      docker run $extra_params andyshinn/dnsmasq:${BMU_DNSMASQ_VERSION}
+      docker run $extra_params wispro/dnsmasq:${BMU_DNSMASQ_VERSION}
     fi
     return $?
     #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
@@ -296,7 +296,7 @@ upgrade)
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
-  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull marcelmaatkamp/freeradius:latest && docker pull andyshinn/dnsmasq:${BMU_DNSMASQ_VERSION}; then
+  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull marcelmaatkamp/freeradius:latest && docker pull wispro/dnsmasq:${BMU_DNSMASQ_VERSION}; then
     db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
     #TODO reemplazar bak por el nro de version o algo así para poder volver
     cp $db_path ${db_path}.bak
