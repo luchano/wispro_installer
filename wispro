@@ -84,7 +84,10 @@ start_dnsmasq() {
       docker start $DNSMASQ
     else
       echo "Stop local dnsmasq"
-      service dnsmasq stop
+      if [[ -x /usr/sbin/dnsmasq ]]; then
+        service dnsmasq stop
+        apk del dnsmasq
+      fi
       echo "Initializing new docker container with version wispro/dnsmasq"
       local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
       extra_params="$extra_params -d --network host --name $DNSMASQ -h $DNSMASQ -p 53:53/tcp -p 53:53/udp --cap-add=NET_ADMIN $DNSMASQ_VOLUMES"
