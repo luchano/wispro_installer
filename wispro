@@ -175,6 +175,8 @@ start(){
       start_nginx
     fi
 
+    start_dnsmasq
+
     return $?
     #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
   fi
