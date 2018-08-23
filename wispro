@@ -77,6 +77,7 @@ DNSMASQ=dnsmasq
 DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /etc/resolv.conf:/etc/resolv.conf"
+DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.leases:/etc/dnsmasq.leases"
 
 start_dnsmasq() {
   if ! is_running $DNSMASQ; then
@@ -226,8 +227,17 @@ stop)
   ;;
 restart)
   if [[ -n "${2}" ]];then
-    stop ${2}
-    start ${2}
+    case $2 in
+      $FREERADIUS)
+        stop_freeradius
+        start_freeradius;;
+      $DNSMASQ)
+        stop_dnsmasq
+        start_dnsmasq;;
+      *)
+        stop ${2}
+        start ${2}
+    esac
   else
     stop server
     stop daemon
