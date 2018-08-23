@@ -75,8 +75,8 @@ stop_freeradius() {
 
 DNSMASQ=dnsmasq
 DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
-DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
-DNSMASQ_VOLUMES="-v /etc/resolv.conf:/etc/resolv.conf"
+DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
+DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /etc/resolv.conf:/etc/resolv.conf"
 
 start_dnsmasq() {
   if ! is_running $DNSMASQ; then
