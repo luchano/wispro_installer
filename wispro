@@ -10,6 +10,10 @@ DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_co
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
 LOG_PATH=/usr/src/app/log
 
+# We store lines and columns to tell docker later about console size
+LINES=$(stty size| cut -d" " -f1)
+COLUMNS=$(stty size| cut -d" " -f2)
+
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
@@ -356,19 +360,19 @@ upgrade)
   fi
   ;;
 console)
-  docker exec -it wispro-server /bin/bash -c "rails c"
+  docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-server /bin/bash -c "rails c"
   ;;
 log)
   tail -n500 -F /usr/src/app/log/application.log
   ;;
 apply)
-  docker exec -it wispro-server /bin/bash -c "rails runner 'ApplyChanges.new.boot'"
+  docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-server /bin/bash -c "rails runner 'ApplyChanges.new.boot'"
   ;;
 bash-server)
-  docker exec -it wispro-server /bin/bash
+  docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-server /bin/bash
   ;;
 bash-daemon)
-  docker exec -it wispro-daemon /bin/bash
+  docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-daemon /bin/bash
   ;;
 reset)
   echo "Deleting all containers and Wispro database, are you sure?"
