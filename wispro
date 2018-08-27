@@ -209,11 +209,11 @@ stop)
   if [[ -n "${2}" ]];then
     case $2 in
     $FREERADIUS)
-      start_freeradius;;
+      stop_freeradius;;
     $DNSMASQ)
-      start_dnsmasq;;
+      stop_dnsmasq;;
     *)
-      start ${2};;
+      stop ${2};;
     esac
     # if [[ $2 == $FREERADIUS ]];then
     #   stop_freeradius
