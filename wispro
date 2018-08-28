@@ -85,8 +85,8 @@ DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.leases:/etc/dnsma
 
 start_dnsmasq() {
   if ! is_running $DNSMASQ; then
+    touch /usr/src/app/data/dnsmasq.leases
     if container_exists $DNSMASQ; then
-      touch /usr/src/app/data/dnsmasq.leases
       docker start $DNSMASQ
     else
       echo "Stop local dnsmasq"
