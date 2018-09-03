@@ -10,7 +10,7 @@ wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
 BMU_NGINX_VERSION="1.2"
-BMU_DNSMASQ_VERSION="1.1"
+BMU_DNSMASQ_VERSION="1.2"
 FREERADIUS_VERSION="1.2"
 
 echoerr() { printf "%s\n" "$*" >&2; }
