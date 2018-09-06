@@ -36,7 +36,7 @@ https://${alpine_mirror}/alpine/${alpine_version}/community
 END
 
 apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe
+apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
@@ -61,6 +61,8 @@ fi
 
 service docker start
 rc-update add docker default
+service irqbalance start
+rc-update add irqbalance default
 
 # damos tiempo a que levante dockerd
 echo "Waiting for docker to start..."
