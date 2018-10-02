@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.1.20"
+FOR_BMU_VERSION="0.1.22"
 BMU_NGINX_VERSION="1.2"
 BMU_DNSMASQ_VERSION="1.2"
 FREERADIUS_VERSION="1.2"
