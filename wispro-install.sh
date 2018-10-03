@@ -12,6 +12,7 @@ wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/mast
 BMU_NGINX_VERSION="1.2"
 BMU_DNSMASQ_VERSION="1.2"
 FREERADIUS_VERSION="1.2"
+BMU_POSTGRESQL_VERSION="1.0"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
@@ -92,6 +93,7 @@ docker pull wispro/bmu:${wispro_version}
 docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
+docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
