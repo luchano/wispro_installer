@@ -331,23 +331,23 @@ upgrade)
       sleep 3
       iptables -t nat -D WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
     fi
-
-    old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
-    if [[ -n "$old_bmu_freeradius_version" && "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]]; then
-      if is_running freeradius; then
-        freeradius_is_running=true
-      else
-        freeradius_is_running=false
-      fi
-      if $freeradius_is_running;then
-        stop_freeradius
-      fi
-      docker container rm freeradius
-      if $freeradius_is_running;then
-        start_freeradius
+    if container_exists freeradius;then
+      old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
+      if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]];then
+        if is_running freeradius; then
+          freeradius_is_running=true
+        else
+          freeradius_is_running=false
+        fi
+        if $freeradius_is_running;then
+          stop_freeradius
+        fi
+        docker container rm freeradius
+        if $freeradius_is_running;then
+          start_freeradius
+        fi
       fi
     fi
-
     old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' nginx  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
       stop_nginx
