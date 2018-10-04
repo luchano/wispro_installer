@@ -3,9 +3,9 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version="v3.6"
+alpine_version="v3.7"
 alpine_mirror="dl-3.alpinelinux.org"
-wispro_version="0.1.20"
+wispro_version="0.2.0"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
