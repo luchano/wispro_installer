@@ -259,17 +259,19 @@ upgrade)
     exit 1
   }
   restore_old_version(){
+    restore_container(){
+      container=$1
+      if container_exists $container; then
+        docker container rm $container
+      fi
+      docker container rename ${container}-bak $container
+    }
     VERSION=$old_version
     stop server
     stop daemon
-    if container_exists wispro-server; then
-      docker container rm wispro-server
-    fi
-    docker container rename wispro-server-bak wispro-server
-    if container_exists wispro-daemon; then
-      docker container rm wispro-daemon
-    fi
-    docker container rename wispro-daemon-bak wispro-daemon
+    restore_container wispro-server
+    restore_container wispro-daemon
+
     cp $db_path.bak ${db_path}
     start server
     start daemon
@@ -310,6 +312,49 @@ upgrade)
     fi
     do_exit
   }
+  backup_container(){
+    container=$1
+    if container_exists $container; then
+      if container_exists ${container}-bak; then
+        docker container rm ${container}-bak
+      fi
+      docker container rename ${container} ${container}-bak
+    fi
+  }
+  upgrade_containers(){
+    old_bmu_dnsmasq_version=$(docker inspect --format='{{.Config.Image}}' dnsmasq | awk -F: '{print $2}')
+    if [[ "$old_bmu_dnsmasq_version" != "$BMU_DNSMASQ_VERSION" ]]; then
+      iptables -t nat -I WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
+      stop_dnsmasq
+      docker container rm dnsmasq
+      start_dnsmasq
+      sleep 3
+      iptables -t nat -D WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
+    fi
+
+    old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
+    if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]]; then
+      if is_running freeradius; then
+        freeradius_is_running=true
+      else
+        freeradius_is_running=false
+      fi
+      if $freeradius_is_running;then
+        stop_freeradius
+      fi
+      docker container rm freeradius
+      if $freeradius_is_running;then
+        start_freeradius
+      fi
+    fi
+
+    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' nginx  | awk -F: '{print $2}')
+    if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
+      stop_nginx
+      docker container rm nginx
+      start_nginx
+    fi
+  }
   set -x
   new_version=$2
   if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
@@ -323,31 +368,19 @@ upgrade)
     cp $db_path ${db_path}.bak
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
     apply_patches "patches_pre"
+
     sleep 3 #give time to save bmu_update
     stop server
     stop daemon
-
-    if container_exists $NGINX; then
-      docker container rm $NGINX
-    fi
-
-    if container_exists wispro-server; then
-      if container_exists wispro-server-bak; then
-        docker container rm wispro-server-bak
-      fi
-      docker container rename wispro-server wispro-server-bak
-    fi
-    if container_exists wispro-daemon; then
-      if container_exists wispro-daemon-bak; then
-        docker container rm wispro-daemon-bak
-      fi
-      docker container rename wispro-daemon wispro-daemon-bak
-    fi
+    backup_container wispro-server
+    backup_container wispro-daemon
     VERSION=$new_version
     start server
     start daemon
+
     sleep 30
     if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
+      upgrade_containers
       # Check server container with for example an its_alive via http
       apply_patches "patches_post" "restore_old_version"
       exit 0
