@@ -183,8 +183,6 @@ stop(){
   #fi
 }
 start(){
-  start_postgresql
-
   local name=$1 extra_args="" rsync_with_developer_file=/usr/src/app/tmp/.rsync_with_developer
   if [[ "${BASH_ARGV[0]}" == "sync" ]]; then
     touch $rsync_with_developer_file
@@ -195,6 +193,7 @@ start(){
     extra_args="-p 3000:3000"
   fi
 
+  start_postgresql
 
   full_name=wispro-${name}
   if ! is_running $full_name; then
