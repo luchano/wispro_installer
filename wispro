@@ -333,7 +333,7 @@ upgrade)
     fi
 
     old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
-    if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]]; then
+    if [[ -n "$old_bmu_freeradius_version" && "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]]; then
       if is_running freeradius; then
         freeradius_is_running=true
       else
