@@ -379,7 +379,7 @@ upgrade)
     start daemon
 
     sleep 30
-    if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
+    if false;then #is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
       upgrade_containers
       # Check server container with for example an its_alive via http
       apply_patches "patches_post" "restore_old_version"
