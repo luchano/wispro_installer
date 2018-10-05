@@ -1,10 +1,13 @@
 #!/bin/bash
+set -x
+
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.1.21"
+FOR_BMU_VERSION="0.2.0"
 BMU_NGINX_VERSION="1.2"
-BMU_DNSMASQ_VERSION="1.2"
+BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
+BMU_POSTGRESQL_VERSION="1.0"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
@@ -24,9 +27,9 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
 VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/dhcp"
 VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 
-NGINX=nginx
 
-# NGINX shared dirs
+### ================== NGINX =====================
+NGINX=nginx
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
 NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
 
@@ -53,6 +56,7 @@ start_nginx() {
   run_nginx
 }
 
+### ================== FREERADIUS =====================
 FREERADIUS=freeradius
 FREERADIUS_VOLUMES="-v /usr/src/app/data/clients.conf:/etc/raddb/clients.conf"
 FREERADIUS_VOLUMES="$FREERADIUS_VOLUMES -v /usr/src/app/data/users:/etc/raddb/users"  # public assets
@@ -77,6 +81,7 @@ stop_freeradius() {
   docker stop $FREERADIUS
 }
 
+### ================== DNSMASQ =====================
 DNSMASQ=dnsmasq
 #DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
@@ -107,17 +112,48 @@ stop_dnsmasq() {
   docker stop $DNSMASQ
 }
 
+### ================== POSTGRESQL =====================
+POSTGRESQL=bmu_postgresql
+POSTGRESQL_VOLUMES="-v ${LOG_PATH}/postgresql:/var/log/postgresql" # Logs
+POSTGRESQL_VOLUMES="$POSTGRESQL_VOLUMES -v ${VOLUMES_PATH}/data/postgresql:/var/lib/postgresql/data:rw"
+
+run_postgresql() {
+  if container_exists $POSTGRESQL; then
+    docker start $POSTGRESQL
+  else
+    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+    extra_params="$extra_params -d --network host --name $POSTGRESQL -h $POSTGRESQL -p 5432:5432 $POSTGRESQL_VOLUMES"
+
+    docker run $extra_params wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
+  fi
+}
+
+stop_postgresql() {
+  docker stop $POSTGRESQL
+}
+
+start_postgresql() {
+  if is_running $POSTGRESQL; then
+    echo 'running...'
+  else
+    echo "waking up postgres"
+    run_postgresql
+  fi
+}
+
+
+
+### ================== COMMON FUNCTIONS =====================
 is_running(){
-  local name=$1
-  if docker top $name &>/dev/null; then
+  if docker top $1 &>/dev/null; then
     return 0
   else
     return 1
   fi
 }
 container_exists(){
-  local name=$1
-  if [[ $(docker ps -a -f "name=$name\$" --format '{{.Names}}') == $name ]]; then
+  local container_name=$1
+  if [[ $(docker ps -a -f "name=$container_name\$" --format '{{.Names}}') == $container_name ]]; then
     return 0
   else
     return 1
@@ -140,27 +176,29 @@ daemons_are_running(){
 }
 
 stop(){
-  local name=wispro-${1}
+  local stop_name=wispro-${1}
   #if is_running $name; then
-    docker stop $name
-    if [[ "${1}" == "server" ]]; then
+    docker stop $stop_name
+    if [[ "$stop_name" == "wispro-server" ]]; then
       stop_nginx
     fi
   #fi
 }
 start(){
-  local name=$1 extra_args="" rsync_with_developer_file=/usr/src/app/tmp/.rsync_with_developer
+  local start_name=$1 extra_args="" rsync_with_developer_file=/usr/src/app/tmp/.rsync_with_developer
   if [[ "${BASH_ARGV[0]}" == "sync" ]]; then
     touch $rsync_with_developer_file
   else
     [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
-  if [[ $name == "server" ]];then
+  if [[ $start_name == "server" ]];then
     extra_args="-p 3000:3000"
   fi
 
+  full_name=wispro-${start_name}
 
-  full_name=wispro-${name}
+  start_postgresql
+
   if ! is_running $full_name; then
     if container_exists $full_name; then
       opts="start $full_name"
@@ -171,7 +209,8 @@ start(){
         exit 1
       else
         echo "Initializing new docker container with version wispro/bmu:${VERSION}"
-        opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
+        opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+        opts="$opts -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$start_name.sh"
       fi
     fi
     docker $opts
@@ -186,6 +225,9 @@ start(){
     #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
   fi
 }
+
+
+### ================== COMMAND ARGUMENTS =====================
 case $1 in
 check)
   ;;
@@ -196,6 +238,8 @@ start)
       start_freeradius;;
     $DNSMASQ)
       start_dnsmasq;;
+    $POSTGRESQL)
+      start_postgresql;;
     *)
       start ${2};;
     esac
@@ -216,6 +260,8 @@ stop)
       stop_freeradius;;
     $DNSMASQ)
       stop_dnsmasq;;
+    $POSTGRESQL)
+      stop_postgresql;;
     *)
       stop ${2};;
     esac
@@ -238,6 +284,9 @@ restart)
       $DNSMASQ)
         stop_dnsmasq
         start_dnsmasq;;
+      $POSTGRESQL)
+        stop_postgresql
+        start_postgresql;;
       *)
         stop ${2}
         start ${2}
@@ -259,18 +308,20 @@ upgrade)
     exit 1
   }
   restore_old_version(){
+    restore_container(){
+      restore_container=$1
+      if container_exists $restore_container; then
+        docker container rm $restore_container
+      fi
+      docker container rename ${restore_container}-bak $restore_container
+    }
     VERSION=$old_version
     stop server
     stop daemon
-    if container_exists wispro-server; then
-      docker container rm wispro-server
-    fi
-    docker container rename wispro-server-bak wispro-server
-    if container_exists wispro-daemon; then
-      docker container rm wispro-daemon
-    fi
-    docker container rename wispro-daemon-bak wispro-daemon
-    cp $db_path.bak ${db_path}
+
+    restore_container wispro-server
+    restore_container wispro-daemon
+
     start server
     start daemon
   }
@@ -310,46 +361,81 @@ upgrade)
     fi
     do_exit
   }
-  set -x
+  backup_container(){
+    backup_container=$1
+    if container_exists $backup_container; then
+      if container_exists ${backup_container}-bak; then
+        docker container rm ${backup_container}-bak
+      fi
+      docker container rename ${backup_container} ${backup_container}-bak
+    fi
+  }
+  upgrade_containers(){
+    old_bmu_dnsmasq_version=$(docker inspect --format='{{.Config.Image}}' dnsmasq | awk -F: '{print $2}')
+    if [[ "$old_bmu_dnsmasq_version" != "$BMU_DNSMASQ_VERSION" ]]; then
+      iptables -t nat -I WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
+      stop_dnsmasq
+      docker container rm dnsmasq
+      start_dnsmasq
+      sleep 3
+      iptables -t nat -D WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
+    fi
+    if container_exists freeradius;then
+      old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
+      if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]];then
+        if is_running freeradius; then
+          freeradius_is_running=true
+        else
+          freeradius_is_running=false
+        fi
+        if $freeradius_is_running;then
+          stop_freeradius
+        fi
+        docker container rm freeradius
+        if $freeradius_is_running;then
+          start_freeradius
+        fi
+      fi
+    fi
+    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' nginx  | awk -F: '{print $2}')
+    if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
+      stop_nginx
+      docker container rm nginx
+      start_nginx
+    fi
+  }
   new_version=$2
   if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
     download_new_wispro
   fi
   # usamos xargs al final para hacer un simil chomp
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
-  if docker pull wispro/bmu:${new_version} && docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}; then
-    db_path=${VOLUMES_PATH}/data/wispro_bmu_production.sqlite3
-    #TODO reemplazar bak por el nro de version o algo así para poder volver
-    cp $db_path ${db_path}.bak
+  if docker pull wispro/bmu:${new_version} && \
+     docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
+     docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
+     docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
+     docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}; then
+
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
     apply_patches "patches_pre"
+
     sleep 3 #give time to save bmu_update
+
     stop server
     stop daemon
+    backup_container wispro-server
+    backup_container wispro-daemon
 
-    if container_exists $NGINX; then
-      docker container rm $NGINX
-    fi
-
-    if container_exists wispro-server; then
-      if container_exists wispro-server-bak; then
-        docker container rm wispro-server-bak
-      fi
-      docker container rename wispro-server wispro-server-bak
-    fi
-    if container_exists wispro-daemon; then
-      if container_exists wispro-daemon-bak; then
-        docker container rm wispro-daemon-bak
-      fi
-      docker container rename wispro-daemon wispro-daemon-bak
-    fi
     VERSION=$new_version
+
     start server
     start daemon
+
     sleep 30
     if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
       # Check server container with for example an its_alive via http
       apply_patches "patches_post" "restore_old_version"
+      upgrade_containers
       exit 0
     else
       restore_old_version
@@ -375,7 +461,7 @@ bash-daemon)
   docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-daemon /bin/bash
   ;;
 reset)
-  echo "Deleting all containers and Wispro database, are you sure?"
+  echo "Deleting Server/Daemon containers, are you sure?"
   echo "(Pres Ctrl-c to cancel/Enter to continue)"
   read dummy
   VERSION=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
@@ -384,7 +470,6 @@ reset)
   docker container prune -f
   start server
   start daemon
-  #rm -f /usr/src/app/data/wispro_bmu_production.sqlite3
   ;;
 top)
   echo
@@ -400,6 +485,19 @@ top)
 # Con esto verifco que este todo ok después de bajar el archivo
 version)
   echo $FOR_BMU_VERSION
+  ;;
+runner)
+  random_name=$(date +%s | sha256sum | head -c 32)
+  runner_opts="${VOLUMES} --name $random_name wispro/bmu:$FOR_BMU_VERSION"
+
+  echo $runner_opts
+  docker run $runner_opts ${@:2}
+  exit_code=$?
+
+  sleep 1
+  docker rm -f $random_name
+
+  exit $exit_code
   ;;
 *)
   echo "error - wrong arguments"

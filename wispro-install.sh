@@ -3,15 +3,16 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version="v3.6"
+alpine_version="v3.7"
 alpine_mirror="dl-3.alpinelinux.org"
-wispro_version="0.1.21"
+wispro_version="0.2.0"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
 BMU_NGINX_VERSION="1.2"
-BMU_DNSMASQ_VERSION="1.2"
+BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
+BMU_POSTGRESQL_VERSION="1.0"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
@@ -27,6 +28,7 @@ finish() {
 }
 trap finish EXIT
 set -e
+set -x
 
 
 
@@ -92,6 +94,7 @@ docker pull wispro/bmu:${wispro_version}
 docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
+docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
