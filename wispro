@@ -194,9 +194,10 @@ start(){
     extra_args="-p 3000:3000"
   fi
 
+  full_name=wispro-${name}
+
   start_postgresql
 
-  full_name=wispro-${name}
   if ! is_running $full_name; then
     if container_exists $full_name; then
       opts="start $full_name"
@@ -377,7 +378,6 @@ upgrade)
     apply_patches "patches_pre"
     sleep 3 #give time to save bmu_update
 
-    stop $POSTGRESQL
     stop server
     stop daemon
 
@@ -398,7 +398,7 @@ upgrade)
       docker container rename wispro-daemon wispro-daemon-bak
     fi
     VERSION=$new_version
-    start $POSTGRESQL
+
     start server
     start daemon
     sleep 30
