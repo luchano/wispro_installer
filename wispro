@@ -309,11 +309,11 @@ upgrade)
   }
   restore_old_version(){
     restore_container(){
-      container=$1
-      if container_exists $container; then
-        docker container rm $container
+      restore_container=$1
+      if container_exists $restore_container; then
+        docker container rm $restore_container
       fi
-      docker container rename ${container}-bak $container
+      docker container rename ${restore_container}-bak $restore_container
     }
     VERSION=$old_version
     stop server
@@ -362,12 +362,12 @@ upgrade)
     do_exit
   }
   backup_container(){
-    container=$1
-    if container_exists $container; then
-      if container_exists ${container}-bak; then
-        docker container rm ${container}-bak
+    backup_container=$1
+    if container_exists $backup_container; then
+      if container_exists ${backup_container}-bak; then
+        docker container rm ${backup_container}-bak
       fi
-      docker container rename ${container} ${container}-bak
+      docker container rename ${backup_container} ${backup_container}-bak
     fi
   }
   upgrade_containers(){
