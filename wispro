@@ -456,12 +456,16 @@ version)
   ;;
 runner)
   random_name=$(date +%s | sha256sum | head -c 32)
-  runner_opts="run ${VOLUMES} --name $random_name wispro/bmu:$FOR_BMU_VERSION ${@:2}"
+  runner_opts="${VOLUMES} --name $random_name wispro/bmu:$FOR_BMU_VERSION"
 
   echo $runner_opts
-  docker $runner_opts
+  docker run $runner_opts ${@:2}
+  exit_code=$?
+
   sleep 1
   docker rm -f $random_name
+
+  exit $exit_code
   ;;
 *)
   echo "error - wrong arguments"
