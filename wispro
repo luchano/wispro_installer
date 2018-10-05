@@ -454,6 +454,15 @@ top)
 version)
   echo $FOR_BMU_VERSION
   ;;
+runner)
+  random_name=$(date +%s | sha256sum | head -c 32)
+  runner_opts="run ${VOLUMES} --name $random_name wispro/bmu:$FOR_BMU_VERSION ${@:2}"
+
+  echo $runner_opts
+  docker $runner_opts
+  sleep 1
+  docker rm -f $random_name
+  ;;
 *)
   echo "error - wrong arguments"
   ;;
