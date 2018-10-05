@@ -467,6 +467,9 @@ runner)
 
   exit $exit_code
   ;;
+logs)
+  cd /usr/src/app/log
+  ;;
 *)
   echo "error - wrong arguments"
   ;;
