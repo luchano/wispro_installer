@@ -10,7 +10,7 @@ wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
 BMU_NGINX_VERSION="1.2"
-BMU_DNSMASQ_VERSION="1.2"
+BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 
