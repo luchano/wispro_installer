@@ -120,7 +120,7 @@ run_postgresql() {
     docker start $POSTGRESQL
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    extra_params="$extra_params -d --name $POSTGRESQL -h $POSTGRESQL -p 5432:5432 $POSTGRESQL_VOLUMES"
+    extra_params="$extra_params -d --network host --name $POSTGRESQL -h $POSTGRESQL -p 5432:5432 $POSTGRESQL_VOLUMES"
 
     docker run $extra_params wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
   fi
@@ -132,10 +132,11 @@ stop_postgresql() {
 
 start_postgresql() {
   if is_running $POSTGRESQL; then
-    stop_postgresql
+    echo 'running...'
+  else
+    run_postgresql
   fi
 
-  run_postgresql
 }
 
 
@@ -207,7 +208,7 @@ start(){
       else
         echo "Initializing new docker container with version wispro/bmu:${VERSION}"
         opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-        opts="$opts -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name --link $POSTGRESQL wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
+        opts="$opts -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$name.sh"
       fi
     fi
     docker $opts
