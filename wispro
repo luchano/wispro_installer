@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
@@ -299,6 +298,7 @@ restart)
   fi
   ;;
 upgrade)
+  set -x
   #TODO trap
   do_exit(){
     if [[ "$1" == "restore_old_version" ]]; then
