@@ -3,7 +3,7 @@
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
 FOR_BMU_VERSION="0.2.0"
-BMU_NGINX_VERSION="1.2"
+BMU_NGINX_VERSION="1.3"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
@@ -31,6 +31,11 @@ VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 NGINX=nginx
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
 NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
+
+sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
+if [[ ! $sse_support ]]; then
+  BMU_NGINX_VERSION="$BMU_NGINX_VERSION-old"
+fi
 
 run_nginx() {
   if container_exists $NGINX; then
@@ -170,43 +175,6 @@ start_redis() {
     run_redis
   fi
 }
-
-#### TEMPORAL
-### ================== OPENRESTY =====================
-OPENRESTY=openresty
-OPENRESTY_VOLUMES="-v ${LOG_PATH}/openresty:/var/log/nginx" # Logs
-OPENRESTY_VERSION="$BMU_NGINX_VERSION-openresty"
-
-sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
-
-if [ ! $sse_support ]; then
-  OPENRESTY_VERSION="$OPENRESTY_VERSION-old"
-fi
-
-run_openresty() {
-  if container_exists $OPENRESTY; then
-    docker start $OPENRESTY
-  else
-    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    extra_params="$extra_params -d --network host --name $OPENRESTY -h $OPENRESTY $OPENRESTY_VOLUMES"
-
-    docker run $extra_params wispro/bmu_nginx:${OPENRESTY_VERSION}
-  fi
-}
-
-stop_openresty() {
-  docker stop $OPENRESTY
-}
-
-start_openresty() {
-  if is_running $OPENRESTY; then
-    stop_openresty
-  fi
-
-  run_openresty
-}
-
-
 
 
 ### ================== COMMON FUNCTIONS =====================
@@ -478,15 +446,6 @@ upgrade)
 
       start_nginx
     fi
-
-    old_bmu_openresty_version=$(docker inspect --format='{{.Config.Image}}' $OPENRESTY  | awk -F: '{print $2}')
-    if [[ "$old_bmu_openresty_version" != "$OPENRESTY_VERSION" ]]; then
-      stop_openresty
-
-      docker container rm $OPENRESTY
-
-      start_openresty
-    fi
   }
   new_version=$2
   if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
@@ -496,7 +455,6 @@ upgrade)
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
   if docker pull wispro/bmu:${new_version} && \
      docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
-     docker pull wispro/bmu_nginx:${OPENRESTY_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
