@@ -141,6 +141,43 @@ start_postgresql() {
 }
 
 
+#### TEMPORAL
+### ================== OPENRESTY =====================
+OPENRESTY=openresty
+OPENRESTY_VOLUMES="-v ${LOG_PATH}/openresty:/var/log/nginx" # Logs
+OPENRESTY_VERSION="$BMU_NGINX_VERSION-openresty"
+
+sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
+
+if [ ! $sse_support ]; then
+  OPENRESTY_VERSION="$OPENRESTY_VERSION-old"
+fi
+
+run_openresty() {
+  if container_exists $OPENRESTY; then
+    docker start $OPENRESTY
+  else
+    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+    extra_params="$extra_params -d --network host --name $OPENRESTY -h $OPENRESTY $OPENRESTY_VOLUMES"
+
+    docker run $extra_params wispro/bmu_nginx:${OPENRESTY_VERSION}
+  fi
+}
+
+stop_openresty() {
+  docker stop $OPENRESTY
+}
+
+start_openresty() {
+  if is_running $OPENRESTY; then
+    stop_openresty
+  fi
+
+  run_openresty
+}
+
+
+
 
 ### ================== COMMON FUNCTIONS =====================
 is_running(){
@@ -180,6 +217,7 @@ stop(){
     docker stop $stop_name
     if [[ "$stop_name" == "wispro-server" ]]; then
       stop_nginx
+      stop_openresty
     fi
   #fi
 }
@@ -216,6 +254,7 @@ start(){
 
     if [[ $full_name == "wispro-server" ]]; then
       start_nginx
+      start_openresty
     fi
 
     start_dnsmasq
@@ -397,11 +436,22 @@ upgrade)
         fi
       fi
     fi
-    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' nginx  | awk -F: '{print $2}')
+    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' $NGINX  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
       stop_nginx
-      docker container rm nginx
+
+      docker container rm $NGINX
+
       start_nginx
+    fi
+
+    old_bmu_openresty_version=$(docker inspect --format='{{.Config.Image}}' $OPENRESTY  | awk -F: '{print $2}')
+    if [[ "$old_bmu_openresty_version" != "$OPENRESTY_VERSION" ]]; then
+      stop_openresty
+
+      docker container rm $OPENRESTY
+
+      start_openresty
     fi
   }
   new_version=$2
@@ -412,6 +462,7 @@ upgrade)
   api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
   if docker pull wispro/bmu:${new_version} && \
      docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
+     docker pull wispro/bmu_nginx:${OPENRESTY_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}; then
@@ -481,6 +532,9 @@ top)
   echo
   echo "Wispro Nginx"
   docker top nginx
+
+  echo "Wispro Openresty"
+  docker top openresty
   ;;
 # Con esto verifco que este todo ok después de bajar el archivo
 version)
