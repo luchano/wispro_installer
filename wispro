@@ -140,6 +140,36 @@ start_postgresql() {
   fi
 }
 
+### ================== REDIS =====================
+REDIS=redis
+REDIS_VERSION="5.0-alpine3.8"
+REDIS_VOLUMES="-v ${LOG_PATH}/redis:/var/log/redis" # Logs
+REDIS_VOLUMES="$REDIS_VOLUMES -v ${LOG_PATH}/redis:/var/log/redis" # Logs
+REDIS_VOLUMES="$REDIS_VOLUMES -v ${VOLUMES_PATH}/redis:/etc/redis/data:rw"
+
+run_redis() {
+  if container_exists $REDIS; then
+    docker start $REDIS
+  else
+    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+    extra_params="$extra_params -d --network host --name $REDIS -h $REDIS $REDIS_VOLUMES"
+
+    docker run $extra_params redis:${REDIS_VERSION}
+  fi
+}
+
+stop_redis() {
+  docker stop $REDIS
+}
+
+start_redis() {
+  if is_running $REDIS; then
+    echo 'running...'
+  else
+    echo "waking up postgres"
+    run_redis
+  fi
+}
 
 #### TEMPORAL
 ### ================== OPENRESTY =====================
@@ -235,6 +265,7 @@ start(){
   full_name=wispro-${start_name}
 
   start_postgresql
+  start_redis
 
   if ! is_running $full_name; then
     if container_exists $full_name; then
@@ -325,6 +356,9 @@ restart)
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
+      $REDIS)
+        stop_redis
+        start_redis;;
       *)
         stop ${2}
         start ${2}
@@ -465,7 +499,8 @@ upgrade)
      docker pull wispro/bmu_nginx:${OPENRESTY_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
-     docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}; then
+     docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
+     docker pull redis:${REDIS_VERSION} ; then
 
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
     apply_patches "patches_pre"
