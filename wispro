@@ -215,7 +215,6 @@ stop(){
     docker stop $stop_name
     if [[ "$stop_name" == "wispro-server" ]]; then
       stop_nginx
-      stop_openresty
     fi
   #fi
 }
@@ -253,7 +252,6 @@ start(){
 
     if [[ $full_name == "wispro-server" ]]; then
       start_nginx
-      start_openresty
     fi
 
     start_dnsmasq
@@ -525,9 +523,6 @@ top)
   echo
   echo "Wispro Nginx"
   docker top nginx
-
-  echo "Wispro Openresty"
-  docker top openresty
   ;;
 # Con esto verifco que este todo ok después de bajar el archivo
 version)
