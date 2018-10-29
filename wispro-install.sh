@@ -38,13 +38,20 @@ https://${alpine_mirror}/alpine/${alpine_version}/community
 END
 
 apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance
+apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance openntpd
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
 
 echo "wispro-host" > /etc/hostname
 hostname -F /etc/hostname
+
+cat <<EOF > /etc/conf.d/openntpd
+NTPD_HOME=/var/empty
+NTPD_OPTS="-v -s"
+EOF
+rc-update add openntpd default
+service openntpd start
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
