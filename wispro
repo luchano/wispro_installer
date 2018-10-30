@@ -2,7 +2,7 @@
 
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.2.3"
+FOR_BMU_VERSION="0.3.0"
 BMU_NGINX_VERSION="1.3"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
