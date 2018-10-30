@@ -436,6 +436,14 @@ upgrade)
         fi
       fi
     fi
+    old_redis_version=$(docker inspect --format='{{.Config.Image}}' $REDIS  | awk -F: '{print $2}')
+    if [[ "$old_redis_version" != "$REDIS_VERSION" ]]; then
+      stop_redis
+
+      docker container rm $REDIS
+
+      start_redis
+    fi
     old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' $NGINX  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
       stop_nginx
