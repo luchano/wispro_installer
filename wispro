@@ -2,8 +2,8 @@
 
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.2.2"
-BMU_NGINX_VERSION="1.2"
+FOR_BMU_VERSION="0.3.0"
+BMU_NGINX_VERSION="1.3"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
@@ -31,6 +31,11 @@ VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 NGINX=nginx
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
 NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
+
+sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
+if [[ ! $sse_support ]]; then
+  BMU_NGINX_VERSION="$BMU_NGINX_VERSION-old"
+fi
 
 run_nginx() {
   if container_exists $NGINX; then
@@ -140,6 +145,36 @@ start_postgresql() {
   fi
 }
 
+### ================== REDIS =====================
+REDIS=redis
+REDIS_VERSION="5.0-alpine3.8"
+REDIS_VOLUMES="-v ${LOG_PATH}/redis:/var/log/redis" # Logs
+REDIS_VOLUMES="$REDIS_VOLUMES -v ${LOG_PATH}/redis:/var/log/redis" # Logs
+REDIS_VOLUMES="$REDIS_VOLUMES -v ${VOLUMES_PATH}/redis:/etc/redis/data:rw"
+
+run_redis() {
+  if container_exists $REDIS; then
+    docker start $REDIS
+  else
+    local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+    extra_params="$extra_params -d --network host --name $REDIS -h $REDIS $REDIS_VOLUMES"
+
+    docker run $extra_params redis:${REDIS_VERSION}
+  fi
+}
+
+stop_redis() {
+  docker stop $REDIS
+}
+
+start_redis() {
+  if is_running $REDIS; then
+    echo 'running...'
+  else
+    echo "waking up redis"
+    run_redis
+  fi
+}
 
 
 ### ================== COMMON FUNCTIONS =====================
@@ -197,6 +232,7 @@ start(){
   full_name=wispro-${start_name}
 
   start_postgresql
+  start_redis
 
   if ! is_running $full_name; then
     if container_exists $full_name; then
@@ -286,6 +322,9 @@ restart)
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
+      $REDIS)
+        stop_redis
+        start_redis;;
       *)
         stop ${2}
         start ${2}
@@ -397,10 +436,20 @@ upgrade)
         fi
       fi
     fi
-    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' nginx  | awk -F: '{print $2}')
+    old_redis_version=$(docker inspect --format='{{.Config.Image}}' $REDIS  | awk -F: '{print $2}')
+    if [[ "$old_redis_version" != "$REDIS_VERSION" ]]; then
+      stop_redis
+
+      docker container rm $REDIS
+
+      start_redis
+    fi
+    old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' $NGINX  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
       stop_nginx
-      docker container rm nginx
+
+      docker container rm $NGINX
+
       start_nginx
     fi
   }
@@ -414,7 +463,8 @@ upgrade)
      docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
-     docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}; then
+     docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
+     docker pull redis:${REDIS_VERSION} ; then
 
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
     apply_patches "patches_pre"
