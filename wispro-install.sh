@@ -3,7 +3,7 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version="v3.7"
+alpine_version="v3.8"
 alpine_mirror="dl-3.alpinelinux.org"
 wispro_version="0.3.0"
 wispro_dir="/usr/src/app"
@@ -31,14 +31,10 @@ set -e
 set -x
 
 
-
 cat >> /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
-
-apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance openntpd
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
@@ -55,6 +51,7 @@ service openntpd start
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
+  apk update
   apk add git make vim
   cd /tmp
   git clone https://github.com/gentoo/gentoo-syntax.git
