@@ -13,6 +13,7 @@ BMU_NGINX_VERSION="1.3"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
+REDIS_VERSION="5.0-alpine3.8"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
@@ -102,6 +103,7 @@ docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
+docker pull redis:${REDIS_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
