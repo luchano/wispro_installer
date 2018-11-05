@@ -121,6 +121,8 @@ cat > /etc/network/interfaces <<END
 auto lo
 iface lo inet loopback
 END
+# network stops ntpd...
+service openntpd start
 
 cat > /etc/resolv.conf <<END
 nameserver 8.8.8.8
