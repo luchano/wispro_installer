@@ -27,6 +27,23 @@ finish() {
     exit 1
   fi
 }
+install_missing_dependecies(){
+  local file=$(mktemp)
+  apk info > $file
+
+  local packages="iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance openntpd"
+  local packages_to_add=""
+  for package in $packages; do
+    echo $package
+    if ! grep $package $file &>/dev/null; then
+      packages_to_add="${packages_to_add} $package"
+    fi
+  done
+  if [ -n "$packages_to_add" ];then
+    echo installing missing packages
+    apk update && apk add $packages_to_add
+  fi
+}
 trap finish EXIT
 set -e
 set -x
@@ -36,6 +53,10 @@ cat >> /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
+
+# install missing packages
+# Only for retro compat with older (pre 3.8) installers
+install_missing_dependecies
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
