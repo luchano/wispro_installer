@@ -3,7 +3,7 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version="v3.7"
+alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
 alpine_mirror="dl-3.alpinelinux.org"
 wispro_version="0.2.0"
 wispro_dir="/usr/src/app"
@@ -31,8 +31,12 @@ set -e
 set -x
 
 
+<<<<<<< HEAD
 
 cat >> /etc/apk/repositories <<END
+=======
+cat > /etc/apk/repositories <<END
+>>>>>>> 7faa176... Do not append
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
