@@ -28,7 +28,7 @@ set -e
 
 
 
-cat >> /etc/apk/repositories <<END
+cat > /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
