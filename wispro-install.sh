@@ -31,12 +31,7 @@ set -e
 set -x
 
 
-<<<<<<< HEAD
-
-cat >> /etc/apk/repositories <<END
-=======
 cat > /etc/apk/repositories <<END
->>>>>>> 7faa176... Do not append
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
