@@ -3,8 +3,8 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version=$(cat /etc/alpine-release | awk -F'.'  '{ print "v"$1"."$2}')
-alpine_mirror="dl-3.alpinelinux.org"
+alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
+alpine_mirror="dl-4.alpinelinux.org"
 wispro_version="0.3.1"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
