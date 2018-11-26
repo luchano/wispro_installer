@@ -5,15 +5,15 @@
 
 alpine_version=$(cat /etc/alpine-release | awk -F'.'  '{ print "v"$1"."$2}')
 alpine_mirror="dl-3.alpinelinux.org"
-wispro_version="0.3.0"
+wispro_version="0.3.1"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
-BMU_NGINX_VERSION="1.3"
+BMU_NGINX_VERSION="1.5"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
-REDIS_VERSION="5.0-alpine3.8"
+REDIS_VERSION="1.0"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
@@ -121,7 +121,7 @@ docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
-docker pull redis:${REDIS_VERSION}
+docker pull wispro/bmu_redis:${REDIS_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}
