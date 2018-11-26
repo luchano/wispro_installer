@@ -3,7 +3,7 @@
 # echo PermitRootLogin yes >> /etc/ssh/sshd_config
 # service sshd restart
 
-alpine_version="v3.7"
+alpine_version=$(cat /etc/alpine-release | awk -F'.'  '{ print "v"$1"."$2}')
 alpine_mirror="dl-3.alpinelinux.org"
 wispro_version="0.3.0"
 wispro_dir="/usr/src/app"
@@ -27,19 +27,36 @@ finish() {
     exit 1
   fi
 }
+install_missing_dependecies(){
+  local file=$(mktemp)
+  apk info > $file
+
+  local packages="iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance openntpd"
+  local packages_to_add=""
+  for package in $packages; do
+    echo $package
+    if ! grep $package $file &>/dev/null; then
+      packages_to_add="${packages_to_add} $package"
+    fi
+  done
+  if [ -n "$packages_to_add" ];then
+    echo installing missing packages
+    apk update && apk add $packages_to_add
+  fi
+}
 trap finish EXIT
 set -e
 set -x
 
 
-
-cat >> /etc/apk/repositories <<END
+cat > /etc/apk/repositories <<END
 https://${alpine_mirror}/alpine/${alpine_version}/main
 https://${alpine_mirror}/alpine/${alpine_version}/community
 END
 
-apk update
-apk add iptables iproute2 mii-tool ethtool fping docker curl conntrack-tools ipset dnsmasq bash bash-completion tzdata dhclient ppp-pppoe rp-pppoe irqbalance openntpd
+# install missing packages
+# Only for retro compat with older (pre 3.8) installers
+install_missing_dependecies
 
 echo . /etc/profile.d/bash_completion.sh >> /root/.bashrc
 sed -i 's/ash/bash/' /etc/passwd
@@ -56,6 +73,7 @@ service openntpd start
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
+  apk update
   apk add git make vim
   cd /tmp
   git clone https://github.com/gentoo/gentoo-syntax.git
@@ -124,6 +142,8 @@ cat > /etc/network/interfaces <<END
 auto lo
 iface lo inet loopback
 END
+# network stops ntpd...
+service openntpd start
 
 cat > /etc/resolv.conf <<END
 nameserver 8.8.8.8
