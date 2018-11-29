@@ -24,6 +24,8 @@ VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/public/assets:/usr/src/app/public/assets"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
+VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/pids:/usr/src/app/pids"
+VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/sockets:/usr/src/app/tmp/sockets"
 VOLUMES="${VOLUMES} -v /etc/dhcp:/etc/dhcp"
 VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 
@@ -31,6 +33,7 @@ VOLUMES="${VOLUMES} -v /etc/ppp:/etc/ppp"
 ### ================== NGINX =====================
 NGINX=nginx
 NGINX_VOLUMES="-v ${LOG_PATH}/nginx:/var/log/nginx" # Logs
+NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/sockets:/app/sockets"
 NGINX_VOLUMES="$NGINX_VOLUMES -v ${VOLUMES_PATH}/public/assets:/app/public/assets"  # public assets
 
 sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
@@ -43,7 +46,7 @@ run_nginx() {
     docker start $NGINX
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    extra_params="$extra_params -d --network host --name $NGINX -h $NGINX -p 80:80 -p 443:443 $NGINX_VOLUMES"
+    extra_params="$extra_params -d --network host --name $NGINX -h $NGINX $NGINX_VOLUMES"
 
     docker run $extra_params wispro/bmu_nginx:${BMU_NGINX_VERSION}
   fi
@@ -73,7 +76,7 @@ start_freeradius() {
     else
       echo "Initializing new docker container with version wispro/bmu_freeradius:${FREERADIUS_VERSION}"
       local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-      extra_params="$extra_params -d --network host --name $FREERADIUS -h $FREERADIUS -p 1812:1812/udp  -p 1813:1813 -p 18120:18120 $FREERADIUS_VOLUMES wispro/bmu_freeradius:${FREERADIUS_VERSION}"
+      extra_params="$extra_params -d --network host --name $FREERADIUS -h $FREERADIUS $FREERADIUS_VOLUMES wispro/bmu_freeradius:${FREERADIUS_VERSION}"
       docker run $extra_params
     fi
 
@@ -105,7 +108,7 @@ start_dnsmasq() {
       fi
       echo "Initializing new docker container with version wispro/dnsmasq"
       local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-      extra_params="$extra_params -d --network host --name $DNSMASQ -h $DNSMASQ -p 53:53/tcp -p 53:53/udp --cap-add=NET_ADMIN $DNSMASQ_VOLUMES"
+      extra_params="$extra_params -d --network host --name $DNSMASQ -h $DNSMASQ --cap-add=NET_ADMIN $DNSMASQ_VOLUMES"
       docker run $extra_params wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
     fi
     return $?
@@ -127,7 +130,7 @@ run_postgresql() {
     docker start $POSTGRESQL
   else
     local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
-    extra_params="$extra_params -d --network host --name $POSTGRESQL -h $POSTGRESQL -p 5432:5432 $POSTGRESQL_VOLUMES"
+    extra_params="$extra_params -d --network host --name $POSTGRESQL -h $POSTGRESQL $POSTGRESQL_VOLUMES"
 
     docker run $extra_params wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
   fi
@@ -225,9 +228,6 @@ start(){
   else
     [[ -r $rsync_with_developer_file ]] && rm -f $rsync_with_developer_file
   fi
-  if [[ $start_name == "server" ]];then
-    extra_args="-p 3000:3000"
-  fi
 
   full_name=wispro-${start_name}
 
@@ -244,7 +244,7 @@ start(){
         exit 1
       else
         echo "Initializing new docker container with version wispro/bmu:${VERSION}"
-        opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+        opts="run --log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped --privileged --network host"
         opts="$opts -d ${extra_args} ${VOLUMES} --name $full_name -h $full_name wispro/bmu:${VERSION} /usr/src/app/bin/docker-cmd-$start_name.sh"
       fi
     fi
