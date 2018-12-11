@@ -14,6 +14,12 @@ BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 
+
+sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
+if [[ ! $sse_support ]]; then
+  BMU_NGINX_VERSION="$BMU_NGINX_VERSION-old"
+fi
+
 echoerr() { printf "%s\n" "$*" >&2; }
 finish() {
   local last_status=$?
