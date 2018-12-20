@@ -5,11 +5,11 @@
 
 alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
 alpine_mirror="dl-4.alpinelinux.org"
-wispro_version="0.4.0"
+wispro_version="0.4.1"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
-BMU_NGINX_VERSION="1.6"
+BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
