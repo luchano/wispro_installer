@@ -5,6 +5,7 @@ WISPRO_URL="https://www.cloud.wispro.co"
 FOR_BMU_VERSION="0.4.1"
 BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
+BMU_DHCP_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.0"
@@ -88,9 +89,32 @@ stop_freeradius() {
   docker stop $FREERADIUS
 }
 
+### =================== DHCP =======================
+DHCP=dhcp
+DHCP_VOLUMES="/usr/src/app/data/dhcp/:/etc/dhcp/"
+
+start_dhcp() {
+  if ! is_running $DHCP; then
+    if container_exists $DHCP; then
+      docker start $DHCP
+    else
+      echo "Initializing new docker container with version wispro/bmu_dhcp"
+      local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $DHCP -h $DHCP --cap-add=NET_ADMIN $DHCP_VOLUMES"
+      docker run $extra_params wispro/bmu_dhcp:${BMU_DHCP_VERSION}
+    fi
+    return $?
+    #echo $(docker inspect -f '{{ .State.Pid }}' $name) > $WISPRO_SERVER_PIDFILE
+  fi
+}
+
+stop_dhcp() {
+    docker stop $DHCP
+}
+
 ### ================== DNSMASQ =====================
 DNSMASQ=dnsmasq
-#DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
+# DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /etc/resolv.conf:/etc/resolv.conf"
 DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.wispro/:/etc/dnsmasq.wispro/"
@@ -272,6 +296,8 @@ start)
       start_freeradius;;
     $DNSMASQ)
       start_dnsmasq;;
+    $DHCP)
+      start_dhcp;;
     $POSTGRESQL)
       start_postgresql;;
     *)
@@ -294,6 +320,8 @@ stop)
       stop_freeradius;;
     $DNSMASQ)
       stop_dnsmasq;;
+    $DHCP)
+      stop_dhcp;;
     $POSTGRESQL)
       stop_postgresql;;
     *)
@@ -318,6 +346,9 @@ restart)
       $DNSMASQ)
         stop_dnsmasq
         start_dnsmasq;;
+      $DHCP)
+          stop_dhcp
+          start_dhcp;;
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
@@ -451,6 +482,14 @@ upgrade)
 
       start_nginx
     fi
+    old_bmu_dhcp_version=$(docker inspect --format='{{.Config.Image}}' $DHCP | awk -F: '{print $2}')
+    if [[ "$old_bmu_dhcp_version" != "$BMU_DHCP_VERSION" ]]; then
+        stop_dhcp
+
+        docker container rm $DHCP
+
+        start_dhcp
+    fi
   }
   new_version=$2
   if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
@@ -462,6 +501,7 @@ upgrade)
      docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
+     docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
      docker pull wispro/bmu_redis:${REDIS_VERSION} ; then
 
