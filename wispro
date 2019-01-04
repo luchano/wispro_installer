@@ -91,7 +91,7 @@ stop_freeradius() {
 
 ### =================== DHCP =======================
 DHCP=dhcp
-DHCP_VOLUMES="/usr/src/app/data/dhcp/:/etc/dhcp/"
+DHCP_VOLUMES="-v /usr/src/app/data/dhcp/:/etc/dhcp/"
 
 start_dhcp() {
   if ! is_running $DHCP; then
@@ -114,9 +114,8 @@ stop_dhcp() {
 
 ### ================== DNSMASQ =====================
 DNSMASQ=dnsmasq
-#DNSMASQ_VOLUMES="-v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
-
 DNSMASQ_VOLUMES="-v /etc/resolv.conf:/etc/resolv.conf"
+#DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
 #DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.wispro/:/etc/dnsmasq.wispro/"
 
 start_dnsmasq() {
