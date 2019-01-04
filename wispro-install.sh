@@ -11,6 +11,7 @@ wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
 BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
+BMU_DHCP_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.0"
@@ -126,6 +127,7 @@ docker pull wispro/bmu:${wispro_version}
 docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
+docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 docker pull wispro/bmu_redis:${REDIS_VERSION}
 
