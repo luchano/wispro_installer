@@ -99,7 +99,7 @@ start_dhcp() {
       docker start $DHCP
     else
       echo "Initializing new docker container with version wispro/bmu_dhcp"
-      local extra_params="--log-opt max-size=1m --log-opt max-file=3 --restart=unless-stopped"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
       extra_params="$extra_params -d --network host --name $DHCP -h $DHCP --cap-add=NET_ADMIN $DHCP_VOLUMES"
       docker run $extra_params wispro/bmu_dhcp:${BMU_DHCP_VERSION}
     fi
@@ -538,6 +538,22 @@ console)
   ;;
 log)
   tail -n500 -F /usr/src/app/log/application.log
+  ;;
+logs)
+  if [[ -n "${2}" ]];then
+    file=$(docker inspect --format='{{.LogPath}}' $2)
+    tail -f "${file}"
+  else
+    echo "I need container name"
+  fi
+  ;;
+full_logs)
+  if [[ -n "${2}" ]];then
+    file=$(docker inspect --format='{{.LogPath}}' $2)
+    less "${file}"
+  else
+    echo "I need container name"
+  fi
   ;;
 apply)
   docker exec -it --env COLUMNS=$COLUMNS --env LINES=$LINES wispro-server /bin/bash -c "rails runner 'ApplyChanges.new.boot'"
