@@ -76,6 +76,9 @@ NTPD_OPTS="-v -s"
 EOF
 rc-update add openntpd default
 service openntpd start
+rc-update add local default
+echo "wispro start" > /etc/local.d/wispro.start
+chmod +x /etc/local.d/wispro.start
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
