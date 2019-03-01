@@ -115,6 +115,7 @@ stop_dhcp() {
 ### ================== DNSMASQ =====================
 DNSMASQ=dnsmasq
 DNSMASQ_VOLUMES="-v /etc/resolv.conf:/etc/resolv.conf"
+DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.d/:/etc/dnsmasq.d/"
 #DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.conf:/etc/dnsmasq.conf"
 #DNSMASQ_VOLUMES="$DNSMASQ_VOLUMES -v /usr/src/app/data/dnsmasq.wispro/:/etc/dnsmasq.wispro/"
 
