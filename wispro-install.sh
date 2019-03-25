@@ -5,12 +5,13 @@
 
 alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
 alpine_mirror="dl-4.alpinelinux.org"
-wispro_version="0.4.2"
+wispro_version="0.5.0"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
 BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
+BMU_DHCP_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.0"
@@ -77,8 +78,6 @@ EOF
 rc-update add openntpd default
 service openntpd start
 rc-update add local default
-echo "wispro start" > /etc/local.d/wispro.start
-chmod +x /etc/local.d/wispro.start
 
 if [[ -n "$DEVELOPMENT" ]]; then
   old_dir=$(pwd)
@@ -100,6 +99,11 @@ service docker start
 rc-update add docker default
 service irqbalance start
 rc-update add irqbalance default
+
+rc-update add local default
+echo "for iface in \$(ls -1 /sys/class/net); do [[ \$iface =~ docker|ifb|ppp|lo ]] || ip link set dev \$iface up; done" > /etc/local.d/wispro.start
+echo "wispro start" >> /etc/local.d/wispro.start
+chmod +x /etc/local.d/wispro.start
 
 # damos tiempo a que levante dockerd
 echo "Waiting for docker to start..."
@@ -129,6 +133,7 @@ docker pull wispro/bmu:${wispro_version}
 docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
+docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 docker pull wispro/bmu_redis:${REDIS_VERSION}
 
