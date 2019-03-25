@@ -100,8 +100,8 @@ service irqbalance start
 rc-update add irqbalance default
 
 rc-update add local default
-echo "wispro start" > /etc/local.d/wispro.start
-echo "for iface in \$(ls -1 /sys/class/net); do [[ \$iface =~ docker|ifb|ppp|lo ]] || ip link set dev \$iface up; done" >> /etc/local.d/wispro.start
+echo "for iface in \$(ls -1 /sys/class/net); do [[ \$iface =~ docker|ifb|ppp|lo ]] || ip link set dev \$iface up; done" > /etc/local.d/wispro.start
+echo "wispro start" >> /etc/local.d/wispro.start
 chmod +x /etc/local.d/wispro.start
 
 # damos tiempo a que levante dockerd
