@@ -159,6 +159,10 @@ END
 # network stops ntpd...
 service openntpd start
 
+sed -i 's/#Port 22/Port 22000/g' /etc/ssh/sshd_config
+service sshd restart
+
+
 cat > /etc/resolv.conf <<END
 nameserver 8.8.8.8
 nameserver 8.8.4.4
