@@ -496,7 +496,7 @@ upgrade)
     download_new_wispro
   fi
   # usamos xargs al final para hacer un simil chomp
-  api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | tail -n1 | tr -d '\r')
+  api_token=$(docker exec -t wispro-server /bin/bash -c "rails runner 'puts ServerConfiguration.first.api_token'" | head -n1 | tr -d '\r')
   if docker pull wispro/bmu:${new_version} && \
      docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION} && \
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
