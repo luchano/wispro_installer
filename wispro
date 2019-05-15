@@ -20,7 +20,7 @@ COLUMNS=$(stty size| cut -d" " -f2)
 # Docker host dirs as volumes
 VOLUMES="-v ${VOLUMES_PATH}/tmp:/usr/src/app/tmp"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/log:/usr/src/app/log"
-VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/public/assets:/usr/src/app/public/assets"  # public assets
+VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/public/assets:/usr/src/app/public/assets_mounted"  # public assets
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/data:/usr/src/app/data"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/etc:/usr/src/app/etc"
 VOLUMES="${VOLUMES} -v ${VOLUMES_PATH}/scripts:/usr/src/app/scripts"
