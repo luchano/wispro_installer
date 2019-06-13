@@ -370,9 +370,6 @@ upgrade)
   set -x
   #TODO trap
   do_exit(){
-    if [[ "$1" == "restore_old_version" ]]; then
-      restore_old_version
-    fi
     echo "Upgrade to version ${new_version} failed."
     exit 1
   }
@@ -402,15 +399,15 @@ upgrade)
     if [[ "$status_code" == "200" ]]; then
       if [[ "$(/bin/bash $patch_file TEST)" == "OK" ]];then
         cat $patch_file
-        if ! /bin/bash $patch_file; then
-          do_exit $restore
+        if /bin/bash $patch_file; then
+          return 0
         fi
-      else
-        do_exit $restore
       fi
-    else
-      do_exit $restore
     fi
+    if [[ "$action" == "patches_post" ]]; then
+      restore_old_version
+    fi
+    do_exit
   }
   download_new_wispro(){
     tmp_script=$(mktemp)
@@ -518,14 +515,23 @@ upgrade)
     VERSION=$new_version
 
     start server
-    start daemon
 
-    sleep 30
-    if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
-      # Check server container with for example an its_alive via http
-      apply_patches "patches_post" "restore_old_version"
-      upgrade_containers
-      exit 0
+    # esperando por puerto 80 (Iodine 1st boot es lento)
+    # + las migrations las hace el server y pueden tardar
+    sleep 45
+    if is_running wispro-server ; then
+      start daemon
+      # daemon is much faster
+      sleep 15
+      if is_running wispro-daemon && daemons_are_running; then
+        # Check server container with for example an its_alive via http
+        apply_patches "patches_post"
+        upgrade_containers
+        exit 0
+      else
+        restore_old_version
+        do_exit
+      fi
     else
       restore_old_version
       do_exit
