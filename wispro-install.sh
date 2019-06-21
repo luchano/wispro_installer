@@ -5,7 +5,7 @@
 
 alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
 alpine_mirror="dl-4.alpinelinux.org"
-wispro_version="0.5.1"
+wispro_version="0.5.2"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
@@ -158,6 +158,10 @@ iface lo inet loopback
 END
 # network stops ntpd...
 service openntpd start
+
+sed -i 's/#Port 22/Port 22000/g' /etc/ssh/sshd_config
+service sshd restart
+
 
 cat > /etc/resolv.conf <<END
 nameserver 8.8.8.8
