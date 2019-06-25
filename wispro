@@ -488,6 +488,20 @@ upgrade)
         start_dhcp
     fi
   }
+  wait_for_http_up(){
+    timeout=${1:-60} # default is 60s
+
+    for i in `seq $timeout` ; do
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" localhost:80)
+      if [[ $status_code = 200 || $status_code = 302 ]]; then
+        return 0
+      fi
+      echo "Waiting $i/$timeout HTTP_STATUS: $status_code"
+      sleep 1
+    done
+    return 1
+  }
+
   new_version=$2
   if [[ "${new_version}" != $FOR_BMU_VERSION ]];then
     download_new_wispro
@@ -517,12 +531,15 @@ upgrade)
     if docker run --network host ${VOLUMES} --name migrations --rm wispro/bmu:${VERSION} /bin/bash -c "cd /usr/src/app && rails db:migrate"; then
       start server
       start daemon
-      sleep 45
-      if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
-          # Check server container with for example an its_alive via http
+      echo "Checking wispro server HTTP"
+      wait_for_http_up
+      wait_for_result=$?
+      if [[ $wait_for_result -eq 0 ]]; then
+        if is_running wispro-server && is_running wispro-daemon && daemons_are_running; then
           apply_patches "patches_post"
           upgrade_containers
           exit 0
+        fi
       fi
     fi
     restore_old_version
