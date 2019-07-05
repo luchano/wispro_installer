@@ -6,6 +6,7 @@ FOR_BMU_VERSION="0.6.0"
 BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
 BMU_DHCP_VERSION="1.0"
+BMU_PPTPD_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.1"
@@ -141,6 +142,30 @@ start_dnsmasq() {
 
 stop_dnsmasq() {
   docker stop $DNSMASQ
+}
+
+### ================== PPTPD ==========================
+PPTPD=pptpd
+PPTPD_VOLUMES="-v /usr/src/app/data/chap-secrets:/etc/ppp/chap-secrets"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v /usr/src/app/data/pptpd.conf:/etc/pptpd.conf"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v /usr/src/app/data/pptpd-options:/etc/ppp/pptpd-options"
+
+start_pptpd() {
+  if ! is_running $PPTPD; then
+    if container_exists $PPTPD; then
+      docker start $PPTPD
+    else
+      echo "Initializing new docker container with version wispro/bmu_pptpd"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $PPTPD -h $PPTPD --cap-add=NET_ADMIN $PPTPD_VOLUMES"
+      docker run $extra_params wispro/bmu_pptpd:${BMU_PPTPD_VERSION}
+    fi
+    return $?
+  fi
+}
+
+stop_pptpd() {
+  docker stop $PPTPD
 }
 
 ### ================== POSTGRESQL =====================
@@ -298,6 +323,8 @@ start)
       start_dnsmasq;;
     $DHCP)
       start_dhcp;;
+    $PPTPD)
+      start_pptpd;;
     $POSTGRESQL)
       start_postgresql;;
     *)
@@ -322,6 +349,8 @@ stop)
       stop_dnsmasq;;
     $DHCP)
       stop_dhcp;;
+    $PPTPD)
+      stop_pptpd;;
     $POSTGRESQL)
       stop_postgresql;;
     *)
@@ -347,8 +376,11 @@ restart)
         stop_dnsmasq
         start_dnsmasq;;
       $DHCP)
-          stop_dhcp
-          start_dhcp;;
+        stop_dhcp
+        start_dhcp;;
+      $PPTPD)
+        stop_pptpd
+        start_pptpd;;
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
@@ -487,6 +519,14 @@ upgrade)
 
         start_dhcp
     fi
+    old_bmu_pptpd_version=$(docker inspect --format='{{.Config.Image}}' $PPTPD | awk -F: '{print $2}')
+    if [[ "$old_bmu_pptpd_version" != "$BMU_PPTPD_VERSION" ]]; then
+        stop_pptpd
+
+        docker container rm $PPTPD
+
+        start_pptpd
+    fi
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
@@ -513,6 +553,7 @@ upgrade)
      docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION} && \
      docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION} && \
      docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION} && \
+     docker pull wispro/bmu_pptpd:${BMU_PPTPD_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
      docker pull wispro/bmu_redis:${REDIS_VERSION} ; then
 

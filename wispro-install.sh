@@ -12,6 +12,7 @@ wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/mast
 BMU_NGINX_VERSION="1.7"
 BMU_DNSMASQ_VERSION="1.3"
 BMU_DHCP_VERSION="1.0"
+BMU_PPTPD_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.1"
@@ -134,6 +135,7 @@ docker pull wispro/bmu_nginx:${BMU_NGINX_VERSION}
 docker pull wispro/bmu_freeradius:${FREERADIUS_VERSION}
 docker pull wispro/bmu_dnsmasq:${BMU_DNSMASQ_VERSION}
 docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION}
+docker pull wispro/bmu_pptpd:${BMU_PPTPD_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 docker pull wispro/bmu_redis:${REDIS_VERSION}
 
