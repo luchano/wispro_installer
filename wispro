@@ -146,9 +146,9 @@ stop_dnsmasq() {
 
 ### ================== PPTPD ==========================
 PPTPD=pptpd
-PPTPD_VOLUMES="-v /usr/src/app/data/chap-secrets:/etc/ppp/chap-secrets"
-PPTPD_VOLUMES="$PPTPD_VOLUMES -v /usr/src/app/data/pptpd.conf:/etc/pptpd.conf"
-PPTPD_VOLUMES="$PPTPD_VOLUMES -v /usr/src/app/data/pptpd-options:/etc/ppp/pptpd-options"
+PPTPD_VOLUMES="-v $VOLUMES_PATH/data/chap-secrets:/etc/ppp/chap-secrets"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd.conf:/etc/pptpd.conf"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd-options:/etc/ppp/pptpd-options"
 
 start_pptpd() {
   if ! is_running $PPTPD; then
