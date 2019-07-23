@@ -157,7 +157,7 @@ start_pptpd() {
     else
       echo "Initializing new docker container with version wispro/bmu_pptpd"
       local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
-      extra_params="$extra_params -d --network host --name $PPTPD -h $PPTPD --cap-add=NET_ADMIN $PPTPD_VOLUMES"
+      extra_params="$extra_params -d --privileged --network host --name $PPTPD -h $PPTPD --cap-add=NET_ADMIN $PPTPD_VOLUMES"
       docker run $extra_params wispro/bmu_pptpd:${BMU_PPTPD_VERSION}
     fi
     return $?
