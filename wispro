@@ -146,11 +146,16 @@ stop_dnsmasq() {
 
 ### ================== PPTPD ==========================
 PPTPD=pptpd
-PPTPD_VOLUMES="-v $VOLUMES_PATH/data/chap-secrets:/etc/ppp/chap-secrets"
-PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd.conf:/etc/pptpd.conf"
-PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd-options:/etc/ppp/pptpd-options"
+PPTPD_VOLUMES="-v $VOLUMES_PATH/data/pptpd/chap-secrets:/etc/ppp/chap-secrets"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd/pptpd.conf:/etc/pptpd.conf"
+PPTPD_VOLUMES="$PPTPD_VOLUMES -v $VOLUMES_PATH/data/pptpd/pptpd-options:/etc/ppp/pptpd-options"
 
 start_pptpd() {
+  mkdir -p $VOLUMES_PATH/data/pptpd
+  touch $VOLUMES_PATH/data/pptpd/chap-secrets \
+        $VOLUMES_PATH/data/pptpd/pptpd.conf \
+        $VOLUMES_PATH/data/pptpd/pptpd-options
+
   if ! is_running $PPTPD; then
     if container_exists $PPTPD; then
       docker start $PPTPD
