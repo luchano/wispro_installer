@@ -100,7 +100,7 @@ start_dhcp() {
       docker start $DHCP
     else
       echo "Initializing new docker container with version wispro/bmu_dhcp"
-      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5"
       extra_params="$extra_params -d --network host --name $DHCP -h $DHCP --cap-add=NET_ADMIN $DHCP_VOLUMES"
       docker run $extra_params wispro/bmu_dhcp:${BMU_DHCP_VERSION}
     fi
