@@ -10,6 +10,8 @@ BMU_PPTPD_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.1"
+BMU_TFTP_VERSION="0.0.1"
+BMU_XINETD_VERSION="0.0.1"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
@@ -173,6 +175,49 @@ stop_pptpd() {
   docker stop $PPTPD
 }
 
+### ==================== TFTP ======================
+TFTP=tftp
+TFTP_VOLUMES="-v /usr/src/app/data/tftpboot:/var/tftpboot"
+
+start_tftp() {
+  if ! is_running $TFTP; then
+    if container_exists $TFTP; then
+      docker start $TFTP
+    else
+      echo "Initializing new docker container with version wispro/bmu_tftp"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $TFTP -h $TFTP --cap-add=NET_ADMIN $TFTP_VOLUMES"
+      docker run $extra_params wispro/bmu_tftp:${BMU_TFTP_VERSION}
+    fi
+    return $?
+  fi
+}
+
+stop_tftp() {
+  docker stop $TFTP
+}
+
+### ==================== XINETD ======================
+XINETD=xinetd
+
+start_xinetd() {
+  if ! is_running $XINETD; then
+    if container_exists $XINETD; then
+      docker start $XINETD
+    else
+      echo "Initializing new docker container with version wispro/bmu_xinetd"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $XINETD -h $XINETD --cap-add=NET_ADMIN"
+      docker run $extra_params wispro/bmu_xinetd:${BMU_XINETD_VERSION}
+    fi
+    return $?
+  fi
+}
+
+stop_xinetd() {
+  docker stop $XINETD
+}
+
 ### ================== POSTGRESQL =====================
 POSTGRESQL=bmu_postgresql
 POSTGRESQL_VOLUMES="-v ${LOG_PATH}/postgresql:/var/log/postgresql" # Logs
@@ -330,6 +375,10 @@ start)
       start_dhcp;;
     $PPTPD)
       start_pptpd;;
+    $TFTP)
+      start_tftp;;
+    $XINETD)
+      start_xinetd;;
     $POSTGRESQL)
       start_postgresql;;
     *)
@@ -356,6 +405,10 @@ stop)
       stop_dhcp;;
     $PPTPD)
       stop_pptpd;;
+    $TFTP)
+      stop_tftp;;
+    $XINETD)
+      stop_xinetd;;
     $POSTGRESQL)
       stop_postgresql;;
     *)
@@ -386,6 +439,12 @@ restart)
       $PPTPD)
         stop_pptpd
         start_pptpd;;
+      $TFTP)
+        start_tftp
+        stop_tftp;;
+      $XINETD)
+        start_xinetd
+        stop_xinetd;;
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
@@ -532,6 +591,22 @@ upgrade)
 
         start_pptpd
     fi
+    old_bmu_tftp_version=$(docker inspect --format='{{.Config.Image}}' $TFTP | awk -F: '{print $2}')
+    if [[ "$old_bmu_tftp_version" != "$BMU_TFTP_VERSION" ]]; then
+        stop_tftp
+
+        docker container rm $TFTP
+
+        start_xinetd
+    fi
+    old_bmu_xinetd_version=$(docker inspect --format='{{.Config.Image}}' $XINETD | awk -F: '{print $2}')
+    if [[ "$old_bmu_xinetd_version" != "$BMU_XINETD_VERSION" ]]; then
+        stop_xinetd
+
+        docker container rm $XINETD
+
+        start_xinetd
+    fi
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
@@ -560,6 +635,8 @@ upgrade)
      docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION} && \
      docker pull wispro/bmu_pptpd:${BMU_PPTPD_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
+     docker pull wispro/bmu_tftp:${BMU_TFTP_VERSION} && \
+     docker pull wispro/bmu_xinetd:${BMU_XINETD_VERSION} && \
      docker pull wispro/bmu_redis:${REDIS_VERSION} ; then
 
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
