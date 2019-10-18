@@ -597,7 +597,7 @@ upgrade)
 
         docker container rm $TFTP
 
-        start_xinetd
+        start_tftp
     fi
     old_bmu_xinetd_version=$(docker inspect --format='{{.Config.Image}}' $XINETD | awk -F: '{print $2}')
     if [[ "$old_bmu_xinetd_version" != "$BMU_XINETD_VERSION" ]]; then
