@@ -532,6 +532,25 @@ upgrade)
       docker container rename ${backup_container} ${backup_container}-bak
     fi
   }
+  upgrade_container(){
+    if container_exists $1;then
+      old_service_version=$(docker inspect --format='{{.Config.Image}}' "$1" | awk -F: '{print $2}')
+      if [[ "$old_service_version" != "$3" ]];then
+        if is_running $1; then
+          service_is_running=true
+        else
+          service_is_running=false
+        fi
+        if $service_is_running;then
+          eval "stop_$1" # stop_freeradius
+        fi
+        docker container rm "$1"
+        if $service_is_running;then
+          eval "start_$1" # start_freeradius
+        fi
+      fi
+    fi
+  }
   upgrade_containers(){
     old_bmu_dnsmasq_version=$(docker inspect --format='{{.Config.Image}}' dnsmasq | awk -F: '{print $2}')
     if [[ "$old_bmu_dnsmasq_version" != "$BMU_DNSMASQ_VERSION" ]]; then
@@ -542,71 +561,82 @@ upgrade)
       sleep 3
       iptables -t nat -D WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
     fi
-    if container_exists freeradius;then
-      old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
-      if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]];then
-        if is_running freeradius; then
-          freeradius_is_running=true
-        else
-          freeradius_is_running=false
-        fi
-        if $freeradius_is_running;then
-          stop_freeradius
-        fi
-        docker container rm freeradius
-        if $freeradius_is_running;then
-          start_freeradius
-        fi
-      fi
-    fi
+
     old_redis_version=$(docker inspect --format='{{.Config.Image}}' $REDIS  | awk -F: '{print $2}')
     if [[ "$old_redis_version" != "$REDIS_VERSION" ]]; then
-      stop_redis
-
-      docker container rm $REDIS
-
-      start_redis
+        stop_redis
+        docker container rm $REDIS
+        start_redis
     fi
     old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' $NGINX  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
-      stop_nginx
-
-      docker container rm $NGINX
-
-      start_nginx
+        stop_nginx
+        docker container rm $NGINX
+        start_nginx
     fi
-    old_bmu_dhcp_version=$(docker inspect --format='{{.Config.Image}}' $DHCP | awk -F: '{print $2}')
-    if [[ "$old_bmu_dhcp_version" != "$BMU_DHCP_VERSION" ]]; then
-        stop_dhcp
 
-        docker container rm $DHCP
+    upgrade_container $FREERADIUS $2 $FREERADIUS_VERSION
+    upgrade_container $DHCP $2 $DHCP_VERSION
+    upgrade_container $PPTPD $2 $PPTPD_VERSION
+    upgrade_container $TFTP $2 $TFTP_VERSION
+    upgrade_container $XINETD $2 $XINETD_VERSION
+    # if container_exists $FREERADIUS;then
+    #   old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' $FREERADIUS | awk -F: '{print $2}')
+    #   if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]];then
+    #     if is_running $FREERADIUS; then
+    #       freeradius_is_running=true
+    #     else
+    #       freeradius_is_running=false
+    #     fi
+    #     if $freeradius_is_running;then
+    #       stop_freeradius
+    #     fi
+    #     docker container rm $FREERADIUS
+    #     if $freeradius_is_running;then
+    #       start_freeradius
+    #     fi
+    #   fi
+    # fi
+    # if container_exists $DHCP;then
+    #   old_bmu_dhcp_version=$(docker inspect --format='{{.Config.Image}}' $DHCP | awk -F: '{print $2}')
+    #   if [[ "$old_bmu_dhcp_version" != "$BMU_DHCP_VERSION" ]]; then
+    #       if is_running $DHCP; then
+    #           dhcp_is_running=true
+    #       else
+    #           dhcp_is_running=false
+    #       fi
+    #       if $dhcp_is_running;then
+    #           stop_dhcp
+    #       fi
+    #       docker container rm $DHCP
+    #       if $dhcp_is_running;then
+    #           start_dhcp
+    #       fi
+    #   fi
+    # old_bmu_pptpd_version=$(docker inspect --format='{{.Config.Image}}' $PPTPD | awk -F: '{print $2}')
+    # if [[ "$old_bmu_pptpd_version" != "$BMU_PPTPD_VERSION" ]]; then
+    #     stop_pptpd
 
-        start_dhcp
-    fi
-    old_bmu_pptpd_version=$(docker inspect --format='{{.Config.Image}}' $PPTPD | awk -F: '{print $2}')
-    if [[ "$old_bmu_pptpd_version" != "$BMU_PPTPD_VERSION" ]]; then
-        stop_pptpd
+    #     docker container rm $PPTPD
 
-        docker container rm $PPTPD
+    #     start_pptpd
+    # fi
+    # old_bmu_tftp_version=$(docker inspect --format='{{.Config.Image}}' $TFTP | awk -F: '{print $2}')
+    # if [[ "$old_bmu_tftp_version" != "$BMU_TFTP_VERSION" ]]; then
+    #     stop_tftp
 
-        start_pptpd
-    fi
-    old_bmu_tftp_version=$(docker inspect --format='{{.Config.Image}}' $TFTP | awk -F: '{print $2}')
-    if [[ "$old_bmu_tftp_version" != "$BMU_TFTP_VERSION" ]]; then
-        stop_tftp
+    #     docker container rm $TFTP
 
-        docker container rm $TFTP
+    #     start_tftp
+    # fi
+    # old_bmu_xinetd_version=$(docker inspect --format='{{.Config.Image}}' $XINETD | awk -F: '{print $2}')
+    # if [[ "$old_bmu_xinetd_version" != "$BMU_XINETD_VERSION" ]]; then
+    #     stop_xinetd
 
-        start_tftp
-    fi
-    old_bmu_xinetd_version=$(docker inspect --format='{{.Config.Image}}' $XINETD | awk -F: '{print $2}')
-    if [[ "$old_bmu_xinetd_version" != "$BMU_XINETD_VERSION" ]]; then
-        stop_xinetd
+    #     docker container rm $XINETD
 
-        docker container rm $XINETD
-
-        start_xinetd
-    fi
+    #     start_xinetd
+    # fi
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
