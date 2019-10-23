@@ -440,11 +440,11 @@ restart)
         stop_pptpd
         start_pptpd;;
       $TFTP)
-        start_tftp
-        stop_tftp;;
+        stop_tftp
+        start_tftp;;
       $XINETD)
-        start_xinetd
-        stop_xinetd;;
+        stop_xinetd
+        start_xinetd;;
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
