@@ -303,7 +303,11 @@ daemon_is_running (){
 }
 daemons_are_running(){
   local found=0
-  daemons_running=$(docker top wispro-daemon | grep ruby | awk '{print $5}')
+  # docker top devuelve outputs distintas segun version
+  # en unas me ponía el interprete en args: ruby bmud_daemon_stats)
+  # y en otras solo el: bmud_daemon_stats
+  # por eso hacemos un truquito spliteando por bmud
+  daemons_running=$(docker top wispro-daemon -o pid,args | grep bmud |awk -F 'bmud' '{print "bmud"$2}')
   for daemon_to_check in $DAEMONS_TO_CHECK_AFTER_UPGRADE; do
     daemon_is_running daemon_to_check || return 1
   done
