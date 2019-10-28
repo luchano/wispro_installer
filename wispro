@@ -534,7 +534,7 @@ upgrade)
   }
   upgrade_container(){
     service_name=$1
-    version_number=$3
+    version_number=$2
     if container_exists $service_name;then
       old_service_version=$(docker inspect --format='{{.Config.Image}}' "$1" | awk -F: '{print $2}')
       if [[ "$old_service_version" != "$version_number" ]];then
@@ -577,11 +577,11 @@ upgrade)
         start_nginx
     fi
 
-    upgrade_container $FREERADIUS $2 $FREERADIUS_VERSION
-    upgrade_container $DHCP $2 $DHCP_VERSION
-    upgrade_container $PPTPD $2 $PPTPD_VERSION
-    upgrade_container $TFTP $2 $TFTP_VERSION
-    upgrade_container $XINETD $2 $XINETD_VERSION
+    upgrade_container $FREERADIUS $FREERADIUS_VERSION
+    upgrade_container $DHCP $DHCP_VERSION
+    upgrade_container $PPTPD $PPTPD_VERSION
+    upgrade_container $TFTP $TFTP_VERSION
+    upgrade_container $XINETD $XINETD_VERSION
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
