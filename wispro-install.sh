@@ -5,7 +5,7 @@
 
 alpine_version=$(cat /etc/alpine-release| awk -F'.' '{ print "v"$1"."$2}')
 alpine_mirror="dl-4.alpinelinux.org"
-wispro_version="0.6.3"
+wispro_version="0.7.0"
 wispro_dir="/usr/src/app"
 wispro_binary="/usr/local/bin/wispro"
 wispro_binary_url=https://raw.githubusercontent.com/sequre/wispro_installer/master/wispro
@@ -16,6 +16,8 @@ BMU_PPTPD_VERSION="1.0"
 FREERADIUS_VERSION="1.2"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.1"
+BMU_TFTP_VERSION="1.0"
+BMU_XINETD_VERSION="1.0"
 
 
 sse_support=$(cat /proc/cpuinfo | grep -i sse4_2)
@@ -138,6 +140,8 @@ docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION}
 docker pull wispro/bmu_pptpd:${BMU_PPTPD_VERSION}
 docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION}
 docker pull wispro/bmu_redis:${REDIS_VERSION}
+docker pull wispro/bmu_tftp:${BMU_TFTP_VERSION}
+docker pull wispro/bmu_xinetd:${BMU_XINETD_VERSION}
 
 # setup de wispro
 curl -s -w '%{http_code}' -L "https://github.com/sequre/wispro_installer/raw/${wispro_version}/wispro" -o ${wispro_binary}

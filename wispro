@@ -2,14 +2,16 @@
 
 # Wispro Bandwidth Management Unit
 WISPRO_URL="https://www.cloud.wispro.co"
-FOR_BMU_VERSION="0.6.3"
+FOR_BMU_VERSION="0.7.0"
 BMU_NGINX_VERSION="1.9"
 BMU_DNSMASQ_VERSION="1.3"
 BMU_DHCP_VERSION="1.0"
 BMU_PPTPD_VERSION="1.0"
-FREERADIUS_VERSION="1.2"
+FREERADIUS_VERSION="1.3"
 BMU_POSTGRESQL_VERSION="1.0"
 REDIS_VERSION="1.1"
+BMU_TFTP_VERSION="1.0"
+BMU_XINETD_VERSION="1.0"
 VOLUMES_PATH=/usr/src/app
 DAEMONS_TO_CHECK_AFTER_UPGRADE="bmud bmud_daemon_check_link bmud_daemon_cloud_consumer bmud_daemon_cloud_sync bmud_daemon_contract_notifications"
 WISPRO_SCRIPT_FILE=${BASH_SOURCE}
@@ -173,6 +175,49 @@ stop_pptpd() {
   docker stop $PPTPD
 }
 
+### ==================== TFTP ======================
+TFTP=tftp
+TFTP_VOLUMES="-v /usr/src/app/data/tftpboot:/var/tftpboot"
+
+start_tftp() {
+  if ! is_running $TFTP; then
+    if container_exists $TFTP; then
+      docker start $TFTP
+    else
+      echo "Initializing new docker container with version wispro/bmu_tftp"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $TFTP -h $TFTP --cap-add=NET_ADMIN $TFTP_VOLUMES"
+      docker run $extra_params wispro/bmu_tftp:${BMU_TFTP_VERSION}
+    fi
+    return $?
+  fi
+}
+
+stop_tftp() {
+  docker stop $TFTP
+}
+
+### ==================== XINETD ======================
+XINETD=xinetd
+
+start_xinetd() {
+  if ! is_running $XINETD; then
+    if container_exists $XINETD; then
+      docker start $XINETD
+    else
+      echo "Initializing new docker container with version wispro/bmu_xinetd"
+      local extra_params="--log-opt max-size=10m --log-opt max-file=5 --restart=unless-stopped"
+      extra_params="$extra_params -d --network host --name $XINETD -h $XINETD --cap-add=NET_ADMIN"
+      docker run $extra_params wispro/bmu_xinetd:${BMU_XINETD_VERSION}
+    fi
+    return $?
+  fi
+}
+
+stop_xinetd() {
+  docker stop $XINETD
+}
+
 ### ================== POSTGRESQL =====================
 POSTGRESQL=bmu_postgresql
 POSTGRESQL_VOLUMES="-v ${LOG_PATH}/postgresql:/var/log/postgresql" # Logs
@@ -258,7 +303,11 @@ daemon_is_running (){
 }
 daemons_are_running(){
   local found=0
-  daemons_running=$(docker top wispro-daemon | grep ruby | awk '{print $5}')
+  # docker top devuelve outputs distintas segun version
+  # en unas me ponía el interprete en args: ruby bmud_daemon_stats)
+  # y en otras solo el: bmud_daemon_stats
+  # por eso hacemos un truquito spliteando por bmud
+  daemons_running=$(docker top wispro-daemon -o pid,args | grep bmud |awk -F 'bmud' '{print "bmud"$2}')
   for daemon_to_check in $DAEMONS_TO_CHECK_AFTER_UPGRADE; do
     daemon_is_running daemon_to_check || return 1
   done
@@ -330,6 +379,10 @@ start)
       start_dhcp;;
     $PPTPD)
       start_pptpd;;
+    $TFTP)
+      start_tftp;;
+    $XINETD)
+      start_xinetd;;
     $POSTGRESQL)
       start_postgresql;;
     *)
@@ -356,6 +409,10 @@ stop)
       stop_dhcp;;
     $PPTPD)
       stop_pptpd;;
+    $TFTP)
+      stop_tftp;;
+    $XINETD)
+      stop_xinetd;;
     $POSTGRESQL)
       stop_postgresql;;
     *)
@@ -386,6 +443,12 @@ restart)
       $PPTPD)
         stop_pptpd
         start_pptpd;;
+      $TFTP)
+        stop_tftp
+        start_tftp;;
+      $XINETD)
+        stop_xinetd
+        start_xinetd;;
       $POSTGRESQL)
         stop_postgresql
         start_postgresql;;
@@ -473,6 +536,27 @@ upgrade)
       docker container rename ${backup_container} ${backup_container}-bak
     fi
   }
+  upgrade_container(){
+    service_name=$1
+    version_number=$2
+    if container_exists $service_name;then
+      old_service_version=$(docker inspect --format='{{.Config.Image}}' "$1" | awk -F: '{print $2}')
+      if [[ "$old_service_version" != "$version_number" ]];then
+        if is_running $service_name; then
+          service_is_running=true
+        else
+          service_is_running=false
+        fi
+        if $service_is_running;then
+          stop_$service_name # stop_freeradius
+        fi
+        docker container rm "$1"
+        if $service_is_running;then
+          start_$service_name # start_freeradius
+        fi
+      fi
+    fi
+  }
   upgrade_containers(){
     old_bmu_dnsmasq_version=$(docker inspect --format='{{.Config.Image}}' dnsmasq | awk -F: '{print $2}')
     if [[ "$old_bmu_dnsmasq_version" != "$BMU_DNSMASQ_VERSION" ]]; then
@@ -483,55 +567,25 @@ upgrade)
       sleep 3
       iptables -t nat -D WISPRO_PREROUTING -p udp --dport 53 -j DNAT --to 8.8.8.8
     fi
-    if container_exists freeradius;then
-      old_bmu_freeradius_version=$(docker inspect --format='{{.Config.Image}}' freeradius | awk -F: '{print $2}')
-      if [[ "$old_bmu_freeradius_version" != "$FREERADIUS_VERSION" ]];then
-        if is_running freeradius; then
-          freeradius_is_running=true
-        else
-          freeradius_is_running=false
-        fi
-        if $freeradius_is_running;then
-          stop_freeradius
-        fi
-        docker container rm freeradius
-        if $freeradius_is_running;then
-          start_freeradius
-        fi
-      fi
-    fi
+
     old_redis_version=$(docker inspect --format='{{.Config.Image}}' $REDIS  | awk -F: '{print $2}')
     if [[ "$old_redis_version" != "$REDIS_VERSION" ]]; then
-      stop_redis
-
-      docker container rm $REDIS
-
-      start_redis
+        stop_redis
+        docker container rm $REDIS
+        start_redis
     fi
     old_bmu_nginx_version=$(docker inspect --format='{{.Config.Image}}' $NGINX  | awk -F: '{print $2}')
     if [[ "$old_bmu_nginx_version" != "$BMU_NGINX_VERSION" ]]; then
-      stop_nginx
-
-      docker container rm $NGINX
-
-      start_nginx
+        stop_nginx
+        docker container rm $NGINX
+        start_nginx
     fi
-    old_bmu_dhcp_version=$(docker inspect --format='{{.Config.Image}}' $DHCP | awk -F: '{print $2}')
-    if [[ "$old_bmu_dhcp_version" != "$BMU_DHCP_VERSION" ]]; then
-        stop_dhcp
 
-        docker container rm $DHCP
-
-        start_dhcp
-    fi
-    old_bmu_pptpd_version=$(docker inspect --format='{{.Config.Image}}' $PPTPD | awk -F: '{print $2}')
-    if [[ "$old_bmu_pptpd_version" != "$BMU_PPTPD_VERSION" ]]; then
-        stop_pptpd
-
-        docker container rm $PPTPD
-
-        start_pptpd
-    fi
+    upgrade_container $FREERADIUS $FREERADIUS_VERSION
+    upgrade_container $DHCP $DHCP_VERSION
+    upgrade_container $PPTPD $PPTPD_VERSION
+    upgrade_container $TFTP $TFTP_VERSION
+    upgrade_container $XINETD $XINETD_VERSION
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
@@ -560,6 +614,8 @@ upgrade)
      docker pull wispro/bmu_dhcp:${BMU_DHCP_VERSION} && \
      docker pull wispro/bmu_pptpd:${BMU_PPTPD_VERSION} && \
      docker pull wispro/bmu_postgresql:${BMU_POSTGRESQL_VERSION} && \
+     docker pull wispro/bmu_tftp:${BMU_TFTP_VERSION} && \
+     docker pull wispro/bmu_xinetd:${BMU_XINETD_VERSION} && \
      docker pull wispro/bmu_redis:${REDIS_VERSION} ; then
 
     old_version=$(docker inspect --format='{{.Config.Image}}' wispro-server | awk -F: '{print $2}')
