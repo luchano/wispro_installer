@@ -617,7 +617,7 @@ upgrade)
     upgrade_container $PPTPD $PPTPD_VERSION
     upgrade_container $TFTP $TFTP_VERSION
     upgrade_container $XINETD $XINETD_VERSION
-    upgrade_container $ULOGD $ULOGD_VERSION
+    upgrade_container $ULOGD $BMU_ULOGD_VERSION
   }
   wait_for_http_up(){
     timeout=${1:-60} # default is 60s
