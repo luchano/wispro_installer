@@ -69,7 +69,7 @@ start_nginx() {
 }
 
 ### =================== ULOGD =======================
-ULOGD=dhcp
+ULOGD=ulogd
 ULOGD_VOLUMES="-v /usr/src/app/data/ulogd/logs:/var/log/"
 
 start_ulogd() {
