@@ -613,10 +613,10 @@ upgrade)
     fi
 
     upgrade_container $FREERADIUS $FREERADIUS_VERSION
-    upgrade_container $DHCP $DHCP_VERSION
-    upgrade_container $PPTPD $PPTPD_VERSION
-    upgrade_container $TFTP $TFTP_VERSION
-    upgrade_container $XINETD $XINETD_VERSION
+    upgrade_container $DHCP $BMU_DHCP_VERSION
+    upgrade_container $PPTPD $BMU_PPTPD_VERSION
+    upgrade_container $TFTP $BMU_TFTP_VERSION
+    upgrade_container $XINETD $BMU_XINETD_VERSION
     upgrade_container $ULOGD $BMU_ULOGD_VERSION
   }
   wait_for_http_up(){
