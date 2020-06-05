@@ -93,7 +93,7 @@ stop_logstash() {
 
 ### =================== ULOGD =======================
 ULOGD=ulogd
-ULOGD_VOLUMES="-v /usr/src/app/data/ulogd/logs:/var/log/"
+ULOGD_VOLUMES="-v /usr/src/app/data/ulogd/logs/:/var/log/"
 
 start_ulogd() {
     if ! is_running $ULOGD; then
